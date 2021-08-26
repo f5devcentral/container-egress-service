@@ -1,0 +1,87 @@
+---
+## global rule
+apiVersion: kubeovn.io/v1alpha1
+kind: ExternalService
+metadata:
+  name: exsvc1
+  namespace: kube-system
+spec:
+  addresses:
+    - 22.6.6.5
+  ports:
+    - name: dns-udp
+      protocol: UDP
+      port: "9090"
+    - name: dns-tcp
+      protocol: TCP
+      port: "9090"
+---
+apiVersion: kubeovn.io/v1alpha1
+kind: ClusterEgressRule
+metadata:
+  name: rule1
+spec:
+  action: accept
+  externalServices:
+    - exsvc1
+
+
+---
+###ns rule
+apiVersion: kubeovn.io/v1alpha1
+kind: ExternalService
+metadata:
+  name: exsvc3
+  namespace: project3
+spec:
+  addresses:
+    - 100.100.1.1
+  ports:
+    - name: dns-udp
+      protocol: UDP
+      port: "9090"
+    - name: dns-tcp
+      protocol: TCP
+      port: "9090"
+---
+apiVersion: kubeovn.io/v1alpha1
+kind: NamespaceEgressRule
+metadata:
+  name: rule3
+  namespace: project3
+spec:
+  action: accept
+  subnet: 1.1.1.1
+  externalServices:
+    - exsvc3
+
+
+
+---
+##svc rule
+apiVersion: kubeovn.io/v1alpha1
+kind: ExternalService
+metadata:
+  name: exsvc4
+  namespace: default
+spec:
+  addresses:
+    - 211.6.6.7
+  ports:
+    - name: dns-udp
+      protocol: UDP
+      port: "9090"
+    - name: dns-tcp
+      protocol: TCP
+      port: "9090"
+---
+apiVersion: kubeovn.io/v1alpha1
+kind: ServiceEgressRule
+metadata:
+  name: rule4
+  namespace: default
+spec:
+  action: accept
+  service: mysql-service
+  externalServices:
+    - exsvc4

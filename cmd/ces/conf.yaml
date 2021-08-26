@@ -1,0 +1,36 @@
+clusterName: k8s
+isSupportRouteDomain: false
+namespaces:
+  - name: default
+    parttion: Common
+    routeDomain:
+      id: 0
+      name: "rd0"
+    virtualService:
+      template: ''
+    gwPool:
+      serverAddresses:
+        - "192.168.1.1"
+  - name: project2
+    parttion: project2
+    routeDomain:
+      id: 2
+      name: "rd2"
+    virtualService:
+      template: ""
+    gwPool:
+      serverAddresses:
+        - "1.16.10.22"
+        - "192.168.10.22"
+  - name: project3
+    parttion: project3
+    routeDomain:
+      id: 3
+      name: "rd3"
+    virtualService:
+      template: ""
+    gwPool:
+      serverAddresses:
+        - "10.16.10.23"
+
+
