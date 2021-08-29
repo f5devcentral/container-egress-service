@@ -53,5 +53,7 @@ spec:
                 phase:
                   type: string
               type: object
+      subresources:
+        status: {}
 
 
