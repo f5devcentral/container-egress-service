@@ -67,12 +67,12 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 
 	nsConfig := as3.GetConfigNamespace(namespace)
 	if nsConfig == nil {
-		klog.Infof("namespace[%s] not in listen range ", namespace)
+		klog.Infof("namespace[%s] not in watch range ", namespace)
 		return nil
 	}
 
-	klog.Infof("===============================>start sync f5ServiceFirewallRule[%s/%s]", namespace, name)
-	defer klog.Infof("===============================>end sync f5ServiceFirewallRule[%s/%s]", namespace, name)
+	klog.Infof("===============================>start sync serviceEgressRule[%s/%s]", namespace, name)
+	defer klog.Infof("===============================>end sync serviceEgressRule[%s/%s]", namespace, name)
 
 	tenant := nsConfig.Parttion
 	pathProfix := as3.AS3PathPrefix(nsConfig)
@@ -91,7 +91,7 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		rule = r
 		if rule.Status.Phase != kubeovn.ServiceEgressRuleSyncing {
 			rule.Status.Phase = kubeovn.ServiceEgressRuleSyncing
-			rule, err = c.as3clientset.KubeovnV1alpha1().ServiceEgressRules(namespace).Update(context.Background(), rule,
+			rule, err = c.as3clientset.KubeovnV1alpha1().ServiceEgressRules(namespace).UpdateStatus(context.Background(), rule,
 				v1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -419,14 +419,14 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 
 	err = c.as3Client.Patch(patchBody...)
 	if err != nil {
-		err = fmt.Errorf("failed to request AS3 Patch API: %v", err)
+		err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 		klog.Error(err)
 		return err
 	}
 
 	if !isDelete {
 		rule.Status.Phase = kubeovn.ServiceEgressRuleSuccess
-		_, err = c.as3clientset.KubeovnV1alpha1().ServiceEgressRules(namespace).Update(context.Background(), rule, v1.UpdateOptions{})
+		_, err = c.as3clientset.KubeovnV1alpha1().ServiceEgressRules(namespace).UpdateStatus(context.Background(), rule, v1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

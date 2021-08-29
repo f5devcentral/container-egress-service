@@ -4,11 +4,9 @@ go 1.16
 
 require (
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
-	// github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	// github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/tidwall/gjson v1.7.5
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect

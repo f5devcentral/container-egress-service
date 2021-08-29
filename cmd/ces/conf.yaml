@@ -32,5 +32,15 @@ namespaces:
     gwPool:
       serverAddresses:
         - "10.16.10.23"
+  - name: test-ns-a
+    parttion: test-ns-a
+    routeDomain:
+      id: 4
+      name: "rd4"
+    virtualService:
+      template: ""
+    gwPool:
+      serverAddresses:
+        - "10.16.10.24"
 
 

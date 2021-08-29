@@ -3,8 +3,9 @@ package as3
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/tidwall/gjson"
 	"strings"
+
+	"github.com/tidwall/gjson"
 )
 
 var as3DefaultTemplate map[string]interface{}

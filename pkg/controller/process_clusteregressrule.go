@@ -77,7 +77,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		rule = r
 		if rule.Status.Phase != kubeovn.ClusterEgressRuleSyncing {
 			rule.Status.Phase = kubeovn.ClusterEgressRuleSyncing
-			rule, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().Update(context.Background(), rule,
+			rule, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule,
 				v1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -291,7 +291,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 
 	if !isDelete {
 		rule.Status.Phase = kubeovn.ClusterEgressRuleSuccess
-		_, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().Update(context.Background(), rule, v1.UpdateOptions{})
+		_, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule, v1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

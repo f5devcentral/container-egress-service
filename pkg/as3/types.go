@@ -175,3 +175,11 @@ type VirtualService struct {
 type Gwpool struct {
 	ServerAddresses []string `json:"serverAddresses"`
 }
+
+type BigIpAddressList struct{
+	Addresses []BigIpAddresses `json:"addresses"`
+}
+
+type BigIpAddresses struct{
+	Name string `json:"name"`
+}

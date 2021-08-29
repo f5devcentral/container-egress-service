@@ -102,19 +102,20 @@ func main() {
 
 	ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
-		ns = []byte("kube-system")
+		ns = []byte("default")
 		//klog.Fatalf("Error reading /var/run/secrets/kubernetes.io/serviceaccount/namespace: %v", err)
 	}
 
-	cm, err := kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Get(context.Background(), "f5-as3-ctlr", metav1.GetOptions{})
+	
+	cm, err := kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Get(context.Background(), controller.ControllerConfigmap, metav1.GetOptions{})
 	if err != nil {
-		klog.Fatalf("failed to get configmap f5-as3-ctlr: %v", err)
+		klog.Fatalf("failed to get configmap[%s]: %v", controller.ControllerConfigmap, err)
 	}
 
 	var initialized bool
 	if s := cm.Data["initialized"]; s != "" {
 		if initialized, err = strconv.ParseBool(s); err != nil {
-			klog.Fatalf("failed to parse bool value in configmap f5-as3-ctlr: %v", err)
+			klog.Fatalf("failed to parse bool value in configmap[%s]: %v", controller.ControllerConfigmap, err)
 		}
 	}
 
@@ -125,7 +126,7 @@ func main() {
 	if !initialized {
 		cm.Data["initialized"] = "true"
 		if _, err = kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Update(context.Background(), cm, metav1.UpdateOptions{}); err != nil {
-			klog.Fatalf("failed to update configmap f5-as3-ctlr: %v", err)
+			klog.Fatalf("failed to update configmap[%s]: %v", controller.ControllerConfigmap, err)
 		}
 	}
 

@@ -43,6 +43,8 @@ import (
 
 const controllerAgentName = "ces-controller"
 
+const  ControllerConfigmap = "ces-controller-configmap"
+
 const (
 	// SuccessSynced is used as part of the Event 'reason' when a resource is synced
 	SuccessSynced = "Synced"
@@ -80,7 +82,7 @@ type Controller struct {
 	as3Client                    *as3.Client
 }
 
-// NewController returns a new AS3 controller
+// NewController returns a new CES controller
 func NewController(
 	kubeclientset kubernetes.Interface,
 	as3clientset clientset.Interface,
@@ -125,7 +127,7 @@ func NewController(
 	endpointsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		//AddFunc: controller.enqueueEndpoints,
 		UpdateFunc: func(old, new interface{}) {
-			if controller.isUpdate(old, new) {
+			if !controller.isUpdate(old, new) {
 				return
 			}
 			controller.enqueueEndpoints(new)
@@ -136,7 +138,7 @@ func NewController(
 	externalServiceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		//AddFunc: controller.enqueueExternalService,
 		UpdateFunc: func(old, new interface{}) {
-			if controller.isUpdate(old, new) {
+			if !controller.isUpdate(old, new) {
 
 				return
 			}
@@ -148,7 +150,7 @@ func NewController(
 	clusterEgressRuleInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueClusterEgressRule,
 		UpdateFunc: func(old, new interface{}) {
-			if controller.isUpdate(old, new) {
+			if !controller.isUpdate(old, new) {
 				return
 			}
 			controller.enqueueClusterEgressRule(new)
@@ -159,7 +161,7 @@ func NewController(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: controller.enqueueNamespaceEgressRule,
 			UpdateFunc: func(old, new interface{}) {
-				if controller.isUpdate(old, new) {
+				if !controller.isUpdate(old, new) {
 					return
 				}
 				controller.enqueueNamespaceEgressRule(new)
@@ -170,7 +172,7 @@ func NewController(
 	seviceEgressRuleInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueSeviceEgressRule,
 		UpdateFunc: func(old, new interface{}) {
-			if controller.isUpdate(old, new) {
+			if !controller.isUpdate(old, new) {
 				return
 			}
 			controller.enqueueSeviceEgressRule(new)
@@ -189,7 +191,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 	defer c.namespaceEgressRuleWorkqueue.ShutDown()
 	defer c.seviceEgressRuleWorkqueue.ShutDown()
 
-	klog.Info("Starting AS3 controller")
+	klog.Info("Starting CES controller")
 
 	klog.Info("Waiting for informer caches to sync")
 	if ok := cache.WaitForCacheSync(stopCh, c.endpointsSynced); !ok {
@@ -277,12 +279,13 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		newRule := new.(*kubeovn.ClusterEgressRule)
 
 		if oldRule.ResourceVersion == newRule.ResourceVersion {
-			return true
+			return false
 		}
 
 		if oldRule.Spec.Action != newRule.Spec.Action {
-			return false
+			return true
 		}
+
 		for _, oldv := range oldRule.Spec.ExternalServices {
 			find := false
 			for _, newv := range newRule.Spec.ExternalServices {
@@ -292,22 +295,27 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 				}
 			}
 			if !find {
-				return false
+				return true
 			}
 		}
 	case *kubeovn.NamespaceEgressRule:
 		oldNsRule := old.(*kubeovn.NamespaceEgressRule)
 		newNsRule := new.(*kubeovn.NamespaceEgressRule)
+		nsConfig := as3.GetConfigNamespace(oldNsRule.Namespace)
+		if nsConfig == nil {
+			klog.Infof("namespace[%s] not in watch range ", oldNsRule.Namespace)
+			return false
+		}
 
 		if oldNsRule.ResourceVersion == newNsRule.ResourceVersion {
-			return true
+			return false
 		}
 		if oldNsRule.Spec.Action != newNsRule.Spec.Action {
-			return false
+			return true
 		}
 
 		if oldNsRule.Spec.Subnet != newNsRule.Spec.Subnet {
-			return false
+			return true
 		}
 
 		for _, oldv := range oldNsRule.Spec.ExternalServices {
@@ -319,22 +327,27 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 				}
 			}
 			if !find {
-				return false
+				return true
 			}
 		}
 	case *kubeovn.ServiceEgressRule:
 		oldSvcRule := old.(*kubeovn.ServiceEgressRule)
 		newSvcRule := new.(*kubeovn.ServiceEgressRule)
+		nsConfig := as3.GetConfigNamespace(oldSvcRule.Namespace)
+		if nsConfig == nil {
+			klog.Infof("namespace[%s] not in watch range ", oldSvcRule.Namespace)
+			return false
+		}
 		if oldSvcRule.ResourceVersion == newSvcRule.ResourceVersion {
-			return true
+			return false
 		}
 
 		if oldSvcRule.Spec.Action != newSvcRule.Spec.Action {
-			return false
+			return true
 		}
 
 		if oldSvcRule.Spec.Service != newSvcRule.Spec.Service {
-			return false
+			return true
 		}
 
 		for _, oldv := range oldSvcRule.Spec.ExternalServices {
@@ -346,15 +359,19 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 				}
 			}
 			if !find {
-				return false
+				return true
 			}
 		}
 	case *kubeovn.ExternalService:
 		oldExt := old.(*kubeovn.ExternalService)
 		newExt := new.(*kubeovn.ExternalService)
-
+		nsConfig := as3.GetConfigNamespace(oldExt.Namespace)
+		if nsConfig == nil {
+			klog.Infof("namespace[%s] not in watch range ", oldExt.Namespace)
+			return false
+		}
 		if oldExt.ResourceVersion == newExt.ResourceVersion {
-			return true
+			return false
 		}
 
 		for _, oldv := range oldExt.Spec.Addresses {
@@ -366,7 +383,7 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 				}
 			}
 			if !find {
-				return false
+				return true
 			}
 		}
 
@@ -379,13 +396,23 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 				}
 			}
 			if !find {
-				return false
+				return true
 			}
 		}
 	case *corev1.Endpoints:
 		oldEp := old.(*corev1.Endpoints)
 		newEp := new.(*corev1.Endpoints)
+		nsConfig := as3.GetConfigNamespace(oldEp.Namespace)
+		if nsConfig == nil {
+			klog.V(5).Infof("namespace[%s] not in watch range ", oldEp.Namespace)
+			return false
+		}
+
 		if oldEp.ResourceVersion == newEp.ResourceVersion {
+			return false
+		}
+
+		if len(oldEp.Subsets) == 0 && len(newEp.Subsets)>0{
 			return true
 		}
 
@@ -400,14 +427,12 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 						}
 					}
 					if !isFind {
-						return false
+						return true
 					}
 				}
 
 			}
 		}
-		return true
 	}
-	klog.Info("resource don't update, needn't enqueue")
-	return true
+	return false
 }

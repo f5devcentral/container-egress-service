@@ -66,7 +66,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 
 	nsConfig := as3.GetConfigNamespace(namespace)
 	if nsConfig == nil {
-		klog.Infof("namespace[%s] not in listen range ", namespace)
+		klog.Infof("namespace[%s] not in watch range ", namespace)
 		return nil
 	}
 
@@ -87,7 +87,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		rule = r
 		if rule.Status.Phase != kubeovn.NamespaceEgressRuleSyncing {
 			rule.Status.Phase = kubeovn.NamespaceEgressRuleSyncing
-			rule, err = c.as3clientset.KubeovnV1alpha1().NamespaceEgressRules(namespace).Update(context.Background(), rule,
+			rule, err = c.as3clientset.KubeovnV1alpha1().NamespaceEgressRules(namespace).UpdateStatus(context.Background(), rule,
 				v1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -216,7 +216,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		if as3.IsNotFound(err) {
 			isExistTenant = false
 		} else {
-			return fmt.Errorf("failed to get AS3: %v", err)
+			return fmt.Errorf("failed to get BIG-IP: %v", err)
 		}
 	}
 	nsRouteDomainPolicePath := fmt.Sprintf("%s_ns_policy_%s", pathProfix, routeDomain.Name)
@@ -264,11 +264,11 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 
 		err = c.as3Client.Patch(tenantItem)
 		if err != nil {
-			err = fmt.Errorf("failed to request AS3 Patch API: %v", err)
+			err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 			klog.Error(err)
 			return err
 		}
-		klog.Infof("as3 add %s tenant success", tenant)
+		klog.Infof("BIG-IP add %s tenant success", tenant)
 	}
 
 	//Determine to update the rules in all patch bodies
@@ -328,7 +328,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 
 	err = c.as3Client.Patch(patchBody...)
 	if err != nil {
-		err = fmt.Errorf("failed to request AS3 Patch API: %v", err)
+		err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 		klog.Error(err)
 		return err
 	}
@@ -361,7 +361,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 
 	if !isDelete {
 		rule.Status.Phase = kubeovn.NamespaceEgressRuleSuccess
-		_, err = c.as3clientset.KubeovnV1alpha1().NamespaceEgressRules(namespace).Update(context.Background(), rule, v1.UpdateOptions{})
+		_, err = c.as3clientset.KubeovnV1alpha1().NamespaceEgressRules(namespace).UpdateStatus(context.Background(), rule, v1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

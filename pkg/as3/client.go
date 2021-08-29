@@ -223,7 +223,7 @@ func(c *Client)PatchF5Reource( obj interface{}, url string) error{
 	url = c.host + url
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(data))
 	if err != nil {
-		klog.Errorf("Failed to create F5 resouce request: %v", err)
+		klog.Errorf("Failed to create BIG-IP resouce request: %v", err)
 		return err
 	}
 
@@ -236,7 +236,7 @@ func(c *Client)PatchF5Reource( obj interface{}, url string) error{
 
 	resp, err := c.Do(req)
 	if err != nil {
-		klog.Errorf("Failed to call F5 API: %v", err)
+		klog.Errorf("Failed to call BIG-IP API: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -255,13 +255,17 @@ func(c *Client)PatchF5Reource( obj interface{}, url string) error{
 		return err
 	}
 
-	return handleResponse(resp.StatusCode, response)
+	err = handleResponse(resp.StatusCode, response)
+	if err != nil{
+		return err
+	}
+	return c.storeDisk()
 }
 
 func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err error) {
 	req, err := http.NewRequest(http.MethodGet, c.host+url, nil)
 	if err != nil {
-		klog.Errorf("Failed to get f5 resource request: %v", err)
+		klog.Errorf("Failed to get BIG-IP resource request: %v", err)
 		return
 	}
 
@@ -272,7 +276,7 @@ func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err
 
 	resp, err := c.Do(req)
 	if err != nil {
-		klog.Errorf("Failed to call F5 API: %v", err)
+		klog.Errorf("Failed to call BIG-IP API: %v", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -291,7 +295,6 @@ func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err
 	if err = handleResponse(resp.StatusCode, response); err != nil {
 		return
 	}
-
 	return
 }
 
@@ -327,6 +330,56 @@ func (c *Client) PostF5Resouce(obj interface{}, url string) error {
 	}
 
 	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
+	klog.Infof("response: body = %s", string(respBody))
+
+	var response map[string]interface{}
+	if err = json.Unmarshal(respBody, &response); err != nil {
+		klog.Errorf("Failed to unmarshal response body: %v", err)
+		return err
+	}
+
+	err = handleResponse(resp.StatusCode, response)
+	if err != nil{
+		return err
+	}
+	return c.storeDisk()
+}
+
+func (c *Client) storeDisk()error{
+	obj := struct {
+		Commond string `json:"command"`
+	}{
+		Commond: "save",
+	}
+
+	data ,err := json.Marshal(obj)
+	if err != nil{
+		return err
+	}
+	url := c.host + "/mgmt/tm/sys/config"
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		klog.Errorf("Failed to create BIG-IP resouce request: %v", err)
+		return err
+	}
+
+	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
+
+	req.SetBasicAuth(c.username, c.password)
+
+	resp, err := c.Do(req)
+	if err != nil {
+		klog.Errorf("Failed to call BIG-IP API: %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		klog.Errorf("Failed to read response body: %v", err)
+		return err
+	}
+
 	klog.Infof("response: body = %s", string(respBody))
 
 	var response map[string]interface{}

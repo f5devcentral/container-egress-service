@@ -63,7 +63,7 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 
 	nsConfig := as3.GetConfigNamespace(namespace)
 	if nsConfig == nil {
-		klog.Infof("namespace[%s] not in listen range ", namespace)
+		klog.Infof("namespace[%s] not in watch range ", namespace)
 		return nil
 	}
 
@@ -97,29 +97,59 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 
 	for _, rule := range as3Rules {
 		if rule.Spec.Service == nameInRule {
-			pathProfix := as3.AS3PathPrefix(as3.GetConfigNamespace(namespace))
-			srcAddrList := as3.FirewallAddressList{
-				Class: as3.ClassFirewallAddressList,
-			}
+			// pathProfix := as3.AS3PathPrefix(as3.GetConfigNamespace(namespace))
+			// srcAddrList := as3.FirewallAddressList{
+			// 	Class: as3.ClassFirewallAddressList,
+			// }
 
+			// //get src ip
+			// for _, subset := range ep.Subsets {
+			// 	for _, addr := range subset.Addresses {
+			// 		srcAddrList.Addresses = append(srcAddrList.Addresses, addr.IP)
+			// 	}
+			// }
+
+			// patchBody := []as3.PatchItem{}
+			// //update to ruleList source addr
+
+			// patchItem := as3.PatchItem{
+			// 	Path:  fmt.Sprintf("%s_svc_%s_%s_src_%s", pathProfix, rule.Namespace, rule.Name, ep.Name),
+			// 	Op:    as3.OpReplace,
+			// 	Value: srcAddrList,
+			// }
+			// patchBody = append(patchBody, patchItem)
+			// if err = c.as3Client.Patch(patchBody...); err != nil {
+			// 	err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
+			// 	klog.Error(err)
+			// 	return err
+			// }
+
+			//Due to frequent ip update,so BIG-IP native interface is used
+			patchItems := as3.BigIpAddressList{}
 			//get src ip
 			for _, subset := range ep.Subsets {
 				for _, addr := range subset.Addresses {
-					srcAddrList.Addresses = append(srcAddrList.Addresses, addr.IP)
+					patchItem := as3.BigIpAddresses{
+						Name: addr.IP,
+					}
+					patchItems.Addresses = append(patchItems.Addresses, patchItem)
 				}
 			}
 
-			patchBody := []as3.PatchItem{}
-			//update to ruleList source addr
-
-			patchItem := as3.PatchItem{
-				Path:  fmt.Sprintf("%s_svc_%s_%s_src_%s", pathProfix, rule.Namespace, rule.Name, ep.Name),
-				Op:    as3.OpReplace,
-				Value: srcAddrList,
+			if len(patchItems.Addresses) == 0{
+				err = fmt.Errorf("endpoint[%s] subsets.addresses is nil", key)
+				klog.Error(err)
+				return err
 			}
-			patchBody = append(patchBody, patchItem)
+			url := fmt.Sprintf("/mgmt/tm/security/firewall/address-list/~%s~Shared~%s_svc_%s_%s_src_addr_%s", nsConfig.Parttion, as3.GetAs3Config().ClusterName, rule.Namespace, rule.Name, ep.Name)
+			if nsConfig.RouteDomain.Id != 0 {
+				for k := range patchItems.Addresses {
+					patchItems.Addresses[k].Name = patchItems.Addresses[k].Name + "%10"
+				}
+			}
 
-			if err = c.as3Client.Patch(patchBody...); err != nil {
+			err := c.as3Client.PatchF5Reource(patchItems, url)
+			if err != nil {
 				err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 				klog.Error(err)
 				return err
