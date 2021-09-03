@@ -1,5 +1,17 @@
 clusterName: k8s
 isSupportRouteDomain: false
+##AS3 basic configuration
+base: '{
+  "class": "AS3",
+  "action": "deploy",
+  "persist": true,
+  "declaration": {
+    "class": "ADC",
+    "schemaVersion": "3.29.0",
+    "id": "k8s-ces-controller",
+    "Common": {}
+  }
+}'
 namespaces:
   - name: default
     parttion: Common

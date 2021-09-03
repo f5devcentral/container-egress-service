@@ -42,8 +42,6 @@ spec:
                     - drop
                     - accept-decisively
                     - reject
-                subnet:
-                  type: string
                 externalServices:
                   type: array
                   items:
