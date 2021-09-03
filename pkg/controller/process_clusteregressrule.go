@@ -3,13 +3,12 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/as3"
-	"github.com/tidwall/gjson"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -91,170 +90,89 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		}
 	}()
 
-	// service - protocol - ports
-	destPorts := make(map[string]map[string][]string)
-
-	//service - addrs
-	destAddress := make(map[string][]string)
-
-	for _, svcName := range rule.Spec.ExternalServices {
-		svc, err := c.externalServicesLister.ExternalServices(as3.ClusterSvcExtNamespace).Get(svcName)
-		if err != nil {
-			if !errors.IsNotFound(err) {
-				return err
-			}
-			klog.Warningf("external service %s does not exist", svcName)
-			continue
+	exsvcs := make([]kubeovn.ExternalService, len(rule.Spec.ExternalServices))
+	for i, svcName := range rule.Spec.ExternalServices {
+		exsvcs[i] = kubeovn.ExternalService{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      svcName,
+				Namespace: as3.ClusterSvcExtNamespace,
+			},
 		}
-
-		//update ext ruleType global
-		if svc.Labels == nil {
-			svc.Labels = make(map[string]string, 1)
-		}
-		if svc.Labels[as3.RuleTypeLabel] != as3.RuleTypeGlobal {
-			svc.Labels[as3.RuleTypeLabel] = as3.RuleTypeGlobal
-			_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(as3.ClusterSvcExtNamespace).Update(context.Background(), svc, v1.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-		}
-
-		portsMap := make(map[string][]string)
-		for _, port := range svc.Spec.Ports {
-			if port.Port != "" {
-				protocol := strings.ToLower(port.Protocol)
-				portsMap[protocol] = append(portsMap[protocol], strings.Split(port.Port, ",")...)
-			}
-		}
-
-		if len(portsMap) == 0 {
-			portsMap["any"] = nil
-		}
-		destPorts[svcName] = portsMap
-
-		destAddress[svcName] = svc.Spec.Addresses
+	}
+	eg := egress{
+		name:rule.Name,
+		exsvcs: exsvcs,
+		action: rule.Spec.Action,
+		ruleType: as3.RuleTypeGlobal,
 	}
 
-	patchBody := make([]as3.PatchItem, 0)
-
-	as3RulesList := make([]as3.PatchItem, 0)
-
-	for svcName, portMap := range destPorts {
-		//FirewallAddressList
-		addrs := destAddress[svcName]
-		value := as3.FirewallAddressList{
-			Class:     as3.ClassFirewallAddressList,
-			Addresses: addrs,
-		}
-		addrItem := as3.PatchItem{
-			Path:  fmt.Sprintf("/Common/Shared/k8s_global_%s_ext_%s_address", rule.Name, svcName),
-			Op:    as3.OpAdd,
-			Value: value,
-		}
-
-		//FirewallRuleList
-		as3Rules := as3.FirewallRuleList{
-			Class: as3.ClassFirewallRuleList,
-			Rules: []as3.FirewallRule{},
-		}
-		portList := make([]as3.PatchItem, 0)
-		for protocol, ports := range portMap {
-			//FirewallPortList
-			value := as3.FirewallPortList{
-				Class: as3.ClassFirewallPortList,
-				Ports: ports,
-			}
-			portItem := as3.PatchItem{
-				Path:  fmt.Sprintf("/Common/Shared/k8s_global_%s_ext_%s_ports_%s", rule.Name, svcName, protocol),
-				Op:    as3.OpAdd,
-				Value: value,
-			}
-			portList = append(portList, portItem)
-			//FirewallRule
-			//global police don't have source
-			as3Rule := as3.FirewallRule{
-				Name:     fmt.Sprintf("%s_%s_%s", rule.Spec.Action, svcName, protocol),
-				Protocol: protocol,
-				Action:   rule.Spec.Action,
-				Destination: as3.FirewallDestination{
-					PortLists: []as3.Use{
-						{Use: portItem.Path},
-					},
-					AddressLists: []as3.Use{
-						{Use: addrItem.Path},
-					},
-				},
-			}
-			as3Rules.Rules = append(as3Rules.Rules, as3Rule)
-		}
-		as3RulesItem := as3.PatchItem{
-			Path:  fmt.Sprintf("/Common/Shared/k8s_global_%s_ext_%s_rule_list", rule.Name, svcName),
-			Op:    as3.OpAdd,
-			Value: as3Rules,
-		}
-		as3RulesList = append(as3RulesList, as3RulesItem)
-		patchBody = append(patchBody, addrItem, as3RulesItem)
-		patchBody = append(patchBody, portList...)
+	nsConfig := &as3.As3Namespace{
+		Parttion: as3.CommonKey,
 	}
 
-	// get AS3 declaration
-	adc, err := c.as3Client.Get("Common")
-	if err != nil {
-		return fmt.Errorf("failed to get rule list index: %v", err)
+	globalPolicyPath, patchBody, err := c.pkgEgress(eg, nsConfig)
+	if err != nil{
+		return err
 	}
 
-	//Determine to update the rules in all patch bodies
-	patchBody = as3.JudgeSelectedUpdate(adc, patchBody, isDelete)
-
-	// find global polices, if exists: global policy have created
-	if ok := gjson.Get(adc, "Common.Shared.k8s_system_global_policy").Exists(); ok {
-		for _, as3Rule := range as3RulesList {
-			policyRuleList := gjson.Get(adc, "Common.Shared.k8s_system_global_policy.rules").Array()
-			//find index the value of item.Path
-			index := -1
-			for i, rule := range policyRuleList {
-				if rule.Get("use").String() == as3Rule.Path {
-					index = i
-					break
-				}
-			}
-			policyItem := as3.PatchItem{
-				Path: "/Common/Shared/k8s_system_global_policy/rules/-",
-				Value: as3.Use{
-					Use: as3Rule.Path,
-				},
-			}
-			//if isDelete is true( if exist: remove );
-			if isDelete {
-				if index > -1 {
-					policyItem.Op = as3.OpRemove
-					policyItem.Path = fmt.Sprintf("/Common/Shared/k8s_system_global_policy/rules/%d", index)
-					patchBody = append(patchBody, policyItem)
-				}
-			} else {
-				//don,t exist: add
-				if index == -1 {
-					policyItem.Op = as3.OpAdd
-					patchBody = append(patchBody, policyItem)
-				}
-			}
-		}
-	} else {
-		policy := as3.FirewallPolicy{
-			Class: as3.ClassFirewallPolicy,
-			Rules: []as3.Use{},
-		}
-		for _, as3Rule := range as3RulesList {
-			policy.Rules = append(policy.Rules, as3.Use{Use: as3Rule.Path})
-		}
-		policyItem := as3.PatchItem{
-			Path:  "/Common/Shared/k8s_system_global_policy",
-			Op:    as3.OpAdd,
-			Value: policy,
-		}
-		patchBody = append(patchBody, policyItem)
-
-	}
+	//// get AS3 declaration
+	//adc, err := c.as3Client.Get("Common")
+	//if err != nil {
+	//	return fmt.Errorf("failed to get rule list index: %v", err)
+	//}
+	//
+	////Determine to update the rules in all patch bodies
+	//patchBody = as3.JudgeSelectedUpdate(adc, patchBody, isDelete)
+	//
+	//// find global polices, if exists: global policy have created
+	//if ok := gjson.Get(adc, fmt.Sprintf("Common.Shared.%s_system_global_policy", as3.GetAs3Config().ClusterName)).Exists(); ok {
+	//	for _, as3Rule := range as3RulesList {
+	//		policyRuleList := gjson.Get(adc, fmt.Sprintf("Common.Shared.%s_system_global_policy.rules", as3.GetAs3Config().ClusterName)).Array()
+	//		//find index the value of item.Path
+	//		index := -1
+	//		for i, rule := range policyRuleList {
+	//			if rule.Get("use").String() == as3Rule.Path {
+	//				index = i
+	//				break
+	//			}
+	//		}
+	//		policyItem := as3.PatchItem{
+	//			Path: fmt.Sprintf("/Common/Shared/%s_system_global_policy/rules/-", as3.GetAs3Config().ClusterName),
+	//			Value: as3.Use{
+	//				Use: as3Rule.Path,
+	//			},
+	//		}
+	//		//if isDelete is true( if exist: remove );
+	//		if isDelete {
+	//			if index > -1 {
+	//				policyItem.Op = as3.OpRemove
+	//				policyItem.Path = fmt.Sprintf("/Common/Shared/%s_system_global_policy/rules/%d", as3.GetAs3Config().ClusterName, index)
+	//				patchBody = append(patchBody, policyItem)
+	//			}
+	//		} else {
+	//			//don,t exist: add
+	//			if index == -1 {
+	//				policyItem.Op = as3.OpAdd
+	//				patchBody = append(patchBody, policyItem)
+	//			}
+	//		}
+	//	}
+	//} else {
+	//	policy := as3.FirewallPolicy{
+	//		Class: as3.ClassFirewallPolicy,
+	//		Rules: []as3.Use{},
+	//	}
+	//	for _, as3Rule := range as3RulesList {
+	//		policy.Rules = append(policy.Rules, as3.Use{Use: as3Rule.Path})
+	//	}
+	//	policyItem := as3.PatchItem{
+	//		Path:  fmt.Sprintf("/Common/Shared/%s_system_global_policy", as3.GetAs3Config().ClusterName),
+	//		Op:    as3.OpAdd,
+	//		Value: policy,
+	//	}
+	//	patchBody = append(patchBody, policyItem)
+	//
+	//}
 
 	err = c.as3Client.Patch(patchBody...)
 	if err != nil {
@@ -271,9 +189,9 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 	}
 
 	isExist := false
-	if val, ok := response["enforcedPolicy"]; ok {
+	if val, ok := response[as3.EnforcedPolicyKey]; ok {
 		fwEnforcedPolicy := val.(string)
-		if fwEnforcedPolicy == "/Common/Shared/k8s_system_global_policy" {
+		if fwEnforcedPolicy == globalPolicyPath {
 			isExist = true
 		}
 	}
@@ -281,10 +199,15 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 	// created global policy
 	if !isExist {
 		globalPolicy := map[string]string{
-			"enforcedPolicy": "/Common/Shared/k8s_system_global_policy",
+			as3.EnforcedPolicyKey: globalPolicyPath,
 		}
 		err := c.as3Client.PatchF5Reource(globalPolicy, url)
 		if err != nil {
+			return err
+		}
+
+		err = c.as3Client.StoreDisk()
+		if err !=nil {
 			return err
 		}
 	}

@@ -24,6 +24,10 @@ const (
 )
 
 const (
+	//ADC class
+	ClassApplication = "Application"
+	ClassTenant      = "Tenant"
+
 	// AS3 classes
 	ClassFirewallAddressList = "Firewall_Address_List"
 	ClassFirewallPortList    = "Firewall_Port_List"
@@ -34,16 +38,31 @@ const (
 )
 
 const (
+	ClassKey                  = "class"
+	TemplateKey               = "template"
+	SharedKey                 = "Shared"
+	CommonKey                 = "Common"
+	DeclarationKey            = "declaration"
+	EnforcedPolicyKey         = "enforcedPolicy"
+	FwEnforcedPolicyKey       = "fwEnforcedPolicy"
+	DefaultRouteDomainKey     = "defaultRouteDomain"
+	PolicyFirewallEnforcedKey = "policyFirewallEnforced"
+
+	SharedValue = "shared"
+	TenantValue = "Tenant"
+)
+
+const (
 	RuleTypeLabel = "cpaas.io/ruleType"
 
-	RuleTypeGlobal = "global"
+	RuleTypeGlobal    = "global"
 	RuleTypeNamespace = "namespace"
-	RuleTypeService = "service"
+	RuleTypeService   = "service"
 )
 
 const (
 	DenyAllRuleListName = "_svc_deny_all_rule_list"
-	DenyAllRuleName = "deny_all_rule"
+	DenyAllRuleName     = "deny_all_rule"
 )
 
 const (
@@ -123,7 +142,7 @@ type Pool struct {
 
 type Member struct {
 	ServerAddresses []string `json:"serverAddresses"`
-	Enable           bool     `json:"enable"`
+	Enable          bool     `json:"enable"`
 	ServicePort     int      `json:"servicePort"`
 	//BigIp           string   `json:"bigip"`
 }
@@ -144,31 +163,30 @@ type VirtualServer struct {
 	Pool                   string   `json:"pool"`
 }
 
-
 type As3Config struct {
-	ClusterName string `json:"clusterName"`
-	IsSupportRouteDomain bool `json:"isSupportRouteDomain"`
-	Namespaces []As3Namespace `json:"namespaces"`
+	Base                 string         `json:"base"`
+	ClusterName          string         `json:"clusterName"`
+	IsSupportRouteDomain bool           `json:"isSupportRouteDomain"`
+	Namespaces           []As3Namespace `json:"namespaces"`
 }
 
-
 type As3Namespace struct {
-	Name string `json:"name"`
-	Parttion string `json:"parttion"`
-	RouteDomain RouteDomain `json:"routeDomain"`
+	Name           string         `json:"name"`
+	Parttion       string         `json:"parttion"`
+	RouteDomain    RouteDomain    `json:"routeDomain"`
 	VirtualService VirtualService `json:"virtualService"`
-	Gwpool Gwpool `json:"gwPool"`
+	Gwpool         Gwpool         `json:"gwPool"`
 }
 
 type RouteDomain struct {
-	Id int `json:"id,omitempty"`
-	Name string `json:"name,omitempty"`
-	Partition string `json:"partition,omitempty"`
+	Id               int    `json:"id,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Partition        string `json:"partition,omitempty"`
 	FwEnforcedPolicy string `json:"fwEnforcedPolicy,omitempty"`
 }
 
 type VirtualService struct {
-	//Custom vs structure，if "", use Common vs value 
+	//Custom vs structure，if "", use Common vs value
 	Template string `json:"template"`
 }
 
@@ -176,10 +194,10 @@ type Gwpool struct {
 	ServerAddresses []string `json:"serverAddresses"`
 }
 
-type BigIpAddressList struct{
+type BigIpAddressList struct {
 	Addresses []BigIpAddresses `json:"addresses"`
 }
 
-type BigIpAddresses struct{
+type BigIpAddresses struct {
 	Name string `json:"name"`
 }

@@ -55,8 +55,6 @@ func (c *Controller) processNextExternalServiceWorkItem() bool {
 	return true
 }
 
-
-
 func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.ExternalService) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -72,14 +70,14 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		klog.Errorf("externalservices[%s] not found",  name)
+		klog.Errorf("externalservices[%s] not found", name)
 		return nil
 	} else {
 		service = es
 	}
 
-	defer func (){
-		if err != nil{
+	defer func() {
+		if err != nil {
 			c.recorder.Event(service, corev1.EventTypeWarning, err.Error(), MessageResourceFailedSynced)
 		}
 	}()
@@ -105,17 +103,18 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 	switch ruleType {
 	case as3.RuleTypeGlobal:
 		ruleList, err := c.clusterEgressRuleLister.List(labels.Everything())
-		if err != nil{
+		if err != nil {
 			return err
 		}
-		for _, rule := range ruleList{
+		for _, rule := range ruleList {
 			if find {
 				break
 			}
-			for _, exSvc := range rule.Spec.ExternalServices{
-				if exSvc == es.Name{
+			for _, exSvc := range rule.Spec.ExternalServices {
+				if exSvc == es.Name {
 					find = true
-					addrList.Path = fmt.Sprintf("/Common/Shared/k8s_global_%s_ext_%s_address", rule.Name, service.Name)
+					addrList.Path = fmt.Sprintf("/Common/Shared/%s_global_%s_ext_%s_address", as3.GetCluster(), rule.Name,
+						service.Name)
 					for protocol, ports := range portMap {
 						if len(ports) != 0 {
 							patchItem := as3.PatchItem{
@@ -125,7 +124,8 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 									Ports: ports,
 								},
 							}
-							patchItem.Path = fmt.Sprintf("/Common/Shared/k8s_global_%s_ext_%s_ports_%s", rule.Name, service.Name, protocol)
+							patchItem.Path = fmt.Sprintf("/Common/Shared/%s_global_%s_ext_%s_ports_%s", as3.GetCluster(),
+								rule.Name, service.Name, protocol)
 							portLists = append(portLists, patchItem)
 						}
 					}
@@ -135,15 +135,15 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		}
 	case as3.RuleTypeNamespace:
 		ruleList, err := c.namespaceEgressRuleLister.List(labels.Everything())
-		if err != nil{
+		if err != nil {
 			return err
 		}
-		for _, rule := range ruleList{
+		for _, rule := range ruleList {
 			if find {
 				break
 			}
-			for _, exSvc := range rule.Spec.ExternalServices{
-				if exSvc == es.Name{
+			for _, exSvc := range rule.Spec.ExternalServices {
+				if exSvc == es.Name {
 					find = true
 					pathProfix := as3.AS3PathPrefix(as3.GetConfigNamespace(rule.Namespace))
 					addrList.Path = fmt.Sprintf("%s_ns_%s_%s_ext_%s_address", pathProfix, rule.Namespace, rule.Name, service.Name)
@@ -168,15 +168,15 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		}
 	case as3.RuleTypeService:
 		ruleList, err := c.seviceEgressRuleLister.List(labels.Everything())
-		if err != nil{
+		if err != nil {
 			return err
 		}
-		for _, rule := range ruleList{
+		for _, rule := range ruleList {
 			if find {
 				break
 			}
-			for _, exSvc := range rule.Spec.ExternalServices{
-				if exSvc == es.Name{
+			for _, exSvc := range rule.Spec.ExternalServices {
+				if exSvc == es.Name {
 					pathProfix := as3.AS3PathPrefix(as3.GetConfigNamespace(rule.Namespace))
 					find = true
 					addrList.Path = fmt.Sprintf("%s_svc_%s_%s_ext_%s_address", pathProfix, rule.Namespace, rule.Name, service.Name)
@@ -204,7 +204,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		return nil
 	}
 
-	if addrList.Path == ""{
+	if addrList.Path == "" {
 		return nil
 	}
 	if err = c.as3Client.Patch(append(portLists, addrList)...); err != nil {

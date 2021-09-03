@@ -27,10 +27,11 @@ kind: CustomResourceDefinition
 metadata:
   name: externalservices.kubeovn.io
 spec:
-  scope: Cluster
+  scope: Namespaced
   group: kubeovn.io
   names:
     kind: ExternalService
+    listKind: ExternalServiceList
     singular: externalservice
     plural: externalservices
     shortNames:
@@ -71,16 +72,17 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: f5firewallrules.kubeovn.io
+  name: clusteregressrules.kubeovn.io
 spec:
   scope: Cluster
   group: kubeovn.io
   names:
-    kind: F5FirewallRule
-    singular: f5firewallrule
-    plural: f5firewallrules
+    kind: ClusterEgressRule
+    listKind: ClusterEgressRuleList
+    plural: clusteregressrules
+    singular: clusteregressrule
     shortNames:
-      - f5fwrule
+      - cgr
   versions:
     - name: v1alpha1
       served: true
@@ -89,12 +91,18 @@ spec:
         - name: Action
           type: string
           jsonPath: .spec.action
+        - name: Status
+          type: string
+          jsonPath: .status.phase
       schema:
         openAPIV3Schema:
           type: object
           properties:
             spec:
               type: object
+              required:
+                - action
+                - externalServices
               properties:
                 action:
                   type: string
@@ -103,14 +111,130 @@ spec:
                     - drop
                     - accept-decisively
                     - reject
-                services:
-                  type: array
-                  items:
-                    type: string
                 externalServices:
                   type: array
                   items:
                     type: string
+            status:
+              properties:
+                phase:
+                  type: string
+              type: object
+      subresources:
+        status: {}
+---
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: namespaceegressrules.kubeovn.io
+spec:
+  scope: Namespaced
+  group: kubeovn.io
+  names:
+    kind: NamespaceEgressRule
+    listKind: NamespaceEgressRuleList
+    plural: namespaceegressrules
+    singular: namespaceegressrule
+    shortNames:
+      - nsgr
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      additionalPrinterColumns:
+        - name: Action
+          type: string
+          jsonPath: .spec.action
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - action
+                - externalServices
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - accept
+                    - drop
+                    - accept-decisively
+                    - reject
+                externalServices:
+                  type: array
+                  items:
+                    type: string
+            status:
+              properties:
+                phase:
+                  type: string
+              type: object
+      subresources:
+        status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: serviceegressrules.kubeovn.io
+spec:
+  scope: Namespaced
+  group: kubeovn.io
+  names:
+    kind: ServiceEgressRule
+    listKind: ServiceEgressRuleList
+    plural: serviceegressrules
+    singular: serviceegressrule
+    shortNames:
+      - svcgr
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      additionalPrinterColumns:
+        - name: Action
+          type: string
+          jsonPath: .spec.action
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - action
+                - externalServices
+                - service
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - accept
+                    - drop
+                    - accept-decisively
+                    - reject
+                service:
+                  type: string
+                externalServices:
+                  type: array
+                  items:
+                    type: string
+            status:
+              properties:
+                phase:
+                  type: string
+              type: object
+      subresources:
+        status: {}
 EOF
 echo "-------------------------------"
 echo ""
@@ -139,9 +263,17 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - namespaces
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - ""
+    resources:
       - configmaps
     resourceNames:
-      - f5-as3-ctlr
+      - ces-controller-configmap
     verbs:
       - get
       - update
@@ -157,9 +289,9 @@ rules:
       - kubeovn.io
     resources:
       - externalservices
-      - f5servicefirewallrules
-      - f5globalfirewallrules
-      - f5namespacefirewallrules
+      - clusteregressrules
+      - namespaceegressrules
+      - serviceegressrules
     verbs:
       - get
       - watch
@@ -170,14 +302,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: f5-as3-ctlr
+  name: ces-controller
 subjects:
   - kind: ServiceAccount
-    name: f5-as3-ctlr
+    name: ces-controller
     namespace: $K8S_NAMESPACE
 roleRef:
   kind: ClusterRole
-  name: f5-as3-ctlr
+  name: ces-controller
   apiGroup: rbac.authorization.k8s.io
 EOF
 echo "-------------------------------"
@@ -188,7 +320,7 @@ cat << EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: f5-as3-ctlr
+  name: ces-controller-configmap
   namespace: $K8S_NAMESPACE
 data:
   initialized: "false"
@@ -201,37 +333,37 @@ cat << EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: f5-as3-ctlr
+  name: ces-controller
   namespace: $K8S_NAMESPACE
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: f5-as3-ctlr
+      app: ces-controller
   template:
     metadata:
       labels:
-        app: f5-as3-ctlr
+        app: ces-controller
     spec:
-      serviceAccountName: f5-as3-ctlr
+      serviceAccountName: ces-controller
       containers:
-        - name: f5-as3-ctlr
-          image: kubeovn/f5-as3-ctlr:0.1.0
+        - name: ces-controller
+          image: kubeovn/ces-controller:0.1.0
           imagePullPolicy: IfNotPresent
           command:
             - /f5-as3-ctlr
             - --bigip-url=$BIGIP_URL
             - --bigip-insecure=$BIGIP_INSECURE
-            - --bigip-creds-dir=/f5-bigip-creds
+            - --bigip-creds-dir=/bigip-creds
             - --gateway=$GATEWAY
           volumeMounts:
-            - name: f5-bigip-creds
-              mountPath: "/f5-bigip-creds"
+            - name: bigip-creds
+              mountPath: "/bigip-creds"
               readOnly: true
       volumes:
-        - name: f5-bigip-creds
+        - name: bigip-creds
           secret:
-            secretName: f5-bigip-creds
+            secretName: bigip-creds
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
@@ -239,5 +371,5 @@ EOF
 echo "-------------------------------"
 echo ""
 
-echo "[Step 5] Wait AS3 Controller to Be Ready"
-kubectl -n $K8S_NAMESPACE wait pod --for=condition=Ready -l app=f5-as3-ctlr
+echo "[Step 5] Wait CES Controller to Be Ready"
+kubectl -n $K8S_NAMESPACE wait pod --for=condition=Ready -l app=ces-controller

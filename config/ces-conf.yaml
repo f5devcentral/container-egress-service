@@ -13,11 +13,19 @@ base: '{
   }
 }'
 namespaces:
+  ##common partiton config, init AS3 needs
+  - name: "__common__"
+    parttion: Common
+    virtualService:
+      template: ''
+    gwPool:
+      serverAddresses:
+        - "192.168.10.1"
   - name: default
     parttion: Common
     routeDomain:
       id: 0
-      name: "rd0"
+      name: "0"
     virtualService:
       template: ''
     gwPool:

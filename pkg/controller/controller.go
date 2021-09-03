@@ -314,10 +314,6 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 			return true
 		}
 
-		if oldNsRule.Spec.Subnet != newNsRule.Spec.Subnet {
-			return true
-		}
-
 		for _, oldv := range oldNsRule.Spec.ExternalServices {
 			find := false
 			for _, newv := range newNsRule.Spec.ExternalServices {
@@ -365,11 +361,6 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 	case *kubeovn.ExternalService:
 		oldExt := old.(*kubeovn.ExternalService)
 		newExt := new.(*kubeovn.ExternalService)
-		nsConfig := as3.GetConfigNamespace(oldExt.Namespace)
-		if nsConfig == nil {
-			klog.Infof("namespace[%s] not in watch range ", oldExt.Namespace)
-			return false
-		}
 		if oldExt.ResourceVersion == newExt.ResourceVersion {
 			return false
 		}

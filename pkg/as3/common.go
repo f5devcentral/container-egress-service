@@ -3,26 +3,26 @@ package as3
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
+	"sigs.k8s.io/yaml"
 	"github.com/tidwall/gjson"
 )
 
-var as3DefaultTemplate map[string]interface{}
-
-var as3Config As3Config
-
-func NewVirtualServer(nsConfig *As3Namespace, isNs bool) (vs VirtualServer, err error) {
+func NewVirtualServer(nsConfig *As3Namespace) (vs VirtualServer, err error) {
 	if strings.TrimSpace(nsConfig.VirtualService.Template) != "" {
 		err = json.Unmarshal([]byte(nsConfig.VirtualService.Template), &vs)
+		if err == nil{
+		}
 		return
 	}
 	vsPath := fmt.Sprintf("%s_svc_policy_%s", AS3PathPrefix(nsConfig), nsConfig.RouteDomain.Name)
-	poolName :=  as3Config.ClusterName + "_gw_pool"
-	if !GetAs3Config().IsSupportRouteDomain{
+	cluster := GetCluster()
+	poolName := cluster + "_gw_pool"
+	if !IsSupportRouteDomain(){
 		//because only one vs
-		vsPath = "/Common/Shared/k8s_svc_policy_rd"
-		poolName = "k8s_gw_pool"
+		vsPath = fmt.Sprintf("/Common/Shared/%s_svc_policy_rd", cluster)
 	}
 	vs = VirtualServer{
 		Layer4:                 "any",
@@ -60,36 +60,50 @@ func NewPoll(serverAddresses []string) Pool {
 }
 
 func AS3PathPrefix(nsConfig *As3Namespace) string {
-	return fmt.Sprintf(pathProfix, nsConfig.Parttion, as3Config.ClusterName)
+	return fmt.Sprintf(pathProfix, nsConfig.Parttion, GetCluster())
 }
 
-func InitAs3Tenant(template string, client *Client, initialized bool) error{
+func InitAs3Tenant(client *Client, filePath string,initialized bool) error{
+	configData, err := ioutil.ReadFile(filePath+"/ces-conf.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to read config file %s: %v", filePath, err)
+	}
+	var as3Config As3Config
+	err = yaml.Unmarshal(configData, &as3Config)
+	if err != nil {
+		return err
+	}
+
 	var as3 map[string]interface{}
-	err := json.Unmarshal([]byte(template), &as3)
+	err = json.Unmarshal([]byte(as3Config.Base), &as3)
 	if err != nil {
 		return fmt.Errorf("init as3TenantTemplate error: " + err.Error())
 	}
 
-	as3Tenant, ok := as3["declaration"].(map[string]interface{})["Common"].(map[string]interface{})
+	as3Tenant, ok := as3[DeclarationKey].(map[string]interface{})[CommonKey].(map[string]interface{})
 	if !ok {
-		panic("init as3TenantTemplate error: " + err.Error())
+		return fmt.Errorf("init as3TenantTemplate error: %v", err)
 	}
 
-	var nsConfig *As3Namespace
+	//store tenant in in sync.Map
 	for _, nsconf :=range as3Config.Namespaces{
-		if nsconf.Parttion == "Common"{
-			nsConfig = &nsconf
-			break
+		if nsconf.Parttion == CommonKey{
+			nsconf.RouteDomain = RouteDomain{
+				Id: 0,
+				Name: "0",
+			}
 		}
-	}
-	if nsConfig == nil{
-		return fmt.Errorf("failed to get Common partition data, please set in conf.yaml")
+		registValue(nsconf.Name, nsconf)
 	}
 
-	svcRouteDomainPolicePath := fmt.Sprintf("/Common/Shared/%s_svc_policy_%s", AS3PathPrefix(nsConfig), nsConfig.RouteDomain.Name)
+	//store cluster in sync.Map
+	registValue(currentClusterKey, as3Config.ClusterName)
+	registValue(isSupportRouteDomainKey, as3Config.IsSupportRouteDomain)
+
+	svcRouteDomainPolicePath := fmt.Sprintf("/Common/Shared/%s_svc_policy_rd0", as3Config.ClusterName)
 	if !as3Config.IsSupportRouteDomain{
 		//because only one svc police
-		svcRouteDomainPolicePath = "/Common/Shared/k8s_svc_policy_rd"
+		svcRouteDomainPolicePath = fmt.Sprintf("/Common/Shared/%s_svc_policy_rd", as3Config.ClusterName)
 	}
 
 	items := []PatchItem{
@@ -101,29 +115,53 @@ func InitAs3Tenant(template string, client *Client, initialized bool) error{
 			},
 		},
 	}
-	commonTenant, err:= NewAs3Tenant(nsConfig, items, false)
+
+	nsConfig := GetConfigNamespace(as3CommonPartitionKey)
+	if nsConfig == nil{
+		msg :=`
+namespaces:
+  ##common partiton config, init AS3 needs
+  - name: "__common__"
+    parttion: Common
+    virtualService:
+      template: ''
+    gwPool:
+      serverAddresses:
+        - "192.168.10.1"
+`
+		return fmt.Errorf("No configured Common, please configured, eg: \n%s\n", msg)
+
+	}
+	commonTenant, err:= NewAs3Tenant(nsConfig, items)
 	if err != nil{
 		panic(err)
 	}
 	for k, v := range commonTenant {
 		as3Tenant[k] = v
 	}
-	as3["declaration"].(map[string]interface{})["Common"] = as3Tenant
-	as3DefaultTemplate = as3Tenant
+	as3[DeclarationKey].(map[string]interface{})[CommonKey] = as3Tenant
+
+	registValue(as3DefaultTemplateKey, as3Tenant)
+
 	if !initialized {
 		return client.Post(as3)
 	}
 	return nil
 }
 
-func GetAs3Tenant() (string, map[string]interface{}) {
-	adc, _ := json.Marshal(as3DefaultTemplate)
-	return string(adc), as3DefaultTemplate
+func GetDefaultTemplate()map[string]interface{}{
+	v := getValue(as3DefaultTemplateKey)
+	return v.(map[string]interface{})
 }
 
+func GetCluster() string{
+	v := getValue(currentClusterKey)
+	return v.(string)
+}
 
-func GetVsName(){
-
+func IsSupportRouteDomain() bool{
+	v := getValue(isSupportRouteDomainKey)
+	return v.(bool)
 }
 
 func IsNotFound(err error) bool {
@@ -133,22 +171,23 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-func NewAs3Tenant(nsConfig *As3Namespace, patchBody []PatchItem, isNs bool) (map[string]interface{}, error) {
-	vs, err := NewVirtualServer(nsConfig, isNs)
+func NewAs3Tenant(nsConfig *As3Namespace, patchBody []PatchItem) (map[string]interface{}, error) {
+	vs, err := NewVirtualServer(nsConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	vsPathName := as3Config.ClusterName + "_outbound_vs"
-	if !GetAs3Config().IsSupportRouteDomain{
+	cluster := GetCluster()
+	vsPathName := cluster + "_outbound_vs"
+	if !IsSupportRouteDomain(){
 		//because only one vs
-		vsPathName = "k8s_outbound_vs"
+		vsPathName = fmt.Sprintf("%s_outbound_vs", cluster)
 	}
 
 	app := map[string]interface{}{
-		"class":    "Application",
-		"template": "shared",
-		as3Config.ClusterName + DenyAllRuleListName: FirewallRuleList{
+		ClassKey:    ClassApplication,
+		TemplateKey: SharedValue,
+		cluster + DenyAllRuleListName: FirewallRuleList{
 			Class: ClassFirewallRuleList,
 			//Deny all by default
 			Rules: []FirewallRule{
@@ -170,8 +209,8 @@ func NewAs3Tenant(nsConfig *As3Namespace, patchBody []PatchItem, isNs bool) (map
 		// add deny_all in policyList'uses
 		if policy, ok := item.Value.(FirewallPolicy); ok && strings.Contains(item.Path, "_svc_policy_") {
 			use := Use{fmt.Sprintf("%s%s", AS3PathPrefix(nsConfig), DenyAllRuleListName)}
-			if !as3Config.IsSupportRouteDomain{
-				use = Use{fmt.Sprintf("/Common/Shared/k8s%s", DenyAllRuleListName)}
+			if !IsSupportRouteDomain(){
+				use = Use{fmt.Sprintf("/Common/Shared/%s%s", cluster, DenyAllRuleListName)}
 			}
 			policy.Rules = append(policy.Rules, use)
 			item.Value = policy
@@ -180,33 +219,26 @@ func NewAs3Tenant(nsConfig *As3Namespace, patchBody []PatchItem, isNs bool) (map
 		app[key] = item.Value
 	}
 	as3Tenant := map[string]interface{}{
-		"Shared": app,
-		"class":  "Tenant",
+		ClassKey:  ClassTenant,
+		SharedKey: app,
 	}
 	return as3Tenant, nil
 }
 
-func GetAs3Config() As3Config {
-	return as3Config
-}
-
-func SetAs3Config(c As3Config) {
-	as3Config = c
-}
 
 func GetConfigNamespace(namespace string) *As3Namespace {
-	for _, c := range as3Config.Namespaces {
-		if c.Name == namespace {
-			if !as3Config.IsSupportRouteDomain {
-				//not support rd, set Common, rd = 0
-				c.Parttion = "Common"
-				c.RouteDomain.Id = 0
-				c.RouteDomain.Name = "0"
-			}
-			return &c
-		}
+	v := getValue(namespace)
+	if v == nil{
+		return nil
 	}
-	return nil
+	ns := v.(As3Namespace)
+	if !IsSupportRouteDomain() {
+		//not support rd, set Common, rd = 0
+		ns.Parttion = "Common"
+		ns.RouteDomain.Id = 0
+		ns.RouteDomain.Name = "0"
+	}
+	return &ns
 }
 
 func JudgeSelectedUpdate(adc string, items []PatchItem, isDelete bool) (newItems []PatchItem) {

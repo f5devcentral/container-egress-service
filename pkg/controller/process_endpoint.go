@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-
 	"github.com/kubeovn/ces-controller/pkg/as3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -141,7 +140,8 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 				klog.Error(err)
 				return err
 			}
-			url := fmt.Sprintf("/mgmt/tm/security/firewall/address-list/~%s~Shared~%s_svc_%s_%s_src_addr_%s", nsConfig.Parttion, as3.GetAs3Config().ClusterName, rule.Namespace, rule.Name, ep.Name)
+			url := fmt.Sprintf("/mgmt/tm/security/firewall/address-list/~%s~Shared~%s_svc_%s_%s_src_addr_%s", nsConfig.Parttion, as3.GetCluster(),
+				rule.Namespace, rule.Name, ep.Name)
 			if nsConfig.RouteDomain.Id != 0 {
 				for k := range patchItems.Addresses {
 					patchItems.Addresses[k].Name = patchItems.Addresses[k].Name + "%10"
@@ -157,6 +157,7 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 			break
 		}
 	}
+	go c.frequency()
 
 	c.recorder.Event(endpoints, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil

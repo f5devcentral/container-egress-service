@@ -49,13 +49,13 @@ var (
 	bigipUsername string
 	bigipPassword string
 	bigipCredsDir string
-
-	gateway string
+	bigipConfDir  string
 )
 
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
+	flag.Usage()
 
 	if bigipCredsDir != "" {
 		usernameFile := filepath.Join(bigipCredsDir, "username")
@@ -84,7 +84,7 @@ func main() {
 	}
 
 	if bigipUsername == "" || bigipPassword == "" {
-		panic("Missing Big-IP credentials info")
+		klog.Fatalf("Missing Big-IP credentials info")
 	}
 
 	// set up signals so we handle the first shutdown signal gracefully
@@ -106,7 +106,6 @@ func main() {
 		//klog.Fatalf("Error reading /var/run/secrets/kubernetes.io/serviceaccount/namespace: %v", err)
 	}
 
-	
 	cm, err := kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Get(context.Background(), controller.ControllerConfigmap, metav1.GetOptions{})
 	if err != nil {
 		klog.Fatalf("failed to get configmap[%s]: %v", controller.ControllerConfigmap, err)
@@ -119,7 +118,7 @@ func main() {
 		}
 	}
 
-	err = as3.InitAs3Tenant(adcInitTemplate, as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), initialized)
+	err = as3.InitAs3Tenant(as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), bigipConfDir, initialized)
 	if err != nil {
 		klog.Fatalf("failed to initialize AS3 declaration: %v", err)
 	}
@@ -165,6 +164,5 @@ func init() {
 	flag.StringVar(&bigipUsername, "bigip-username", "", "User name for the Big-IP user account.")
 	flag.StringVar(&bigipPassword, "bigip-password", "", "Password for the Big-IP user account.")
 	flag.StringVar(&bigipCredsDir, "bigip-creds-dir", "", "Directory that contains the BIG-IP username and password. To be used instead of username and password.")
-
-	flag.StringVar(&gateway, "gateway", "", "Gateway for egress traffic.")
+	flag.StringVar(&bigipConfDir, "bigip-conf-dir", "", "Directory that ces-conf.yaml file.")
 }

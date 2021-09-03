@@ -259,7 +259,7 @@ func(c *Client)PatchF5Reource( obj interface{}, url string) error{
 	if err != nil{
 		return err
 	}
-	return c.storeDisk()
+	return nil
 }
 
 func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err error) {
@@ -342,10 +342,10 @@ func (c *Client) PostF5Resouce(obj interface{}, url string) error {
 	if err != nil{
 		return err
 	}
-	return c.storeDisk()
+	return nil
 }
 
-func (c *Client) storeDisk()error{
+func (c *Client) StoreDisk()error{
 	obj := struct {
 		Commond string `json:"command"`
 	}{
