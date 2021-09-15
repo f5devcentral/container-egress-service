@@ -1,0 +1,2488 @@
+package as3
+
+import (
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
+
+	kubeovnv1alpha1 "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func test_client() Client {
+	client := Client{
+		password: "nihao666",
+		username: "admin",
+		host:     "https://192.168.50.75",
+		url:      "",
+		Client:   http.DefaultClient,
+	}
+	client.Client.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	return client
+}
+
+func TestGetAs3ADC(t *testing.T) {
+	aa := map[string]interface{}{
+		"tenant1": map[string]interface{}{
+			"Shared": map[string]interface{}{
+				"aa": "aa",
+			},
+		},
+	}
+	bb := as3ADC(aa)
+	cc := bb.getAS3SharedApp("tenant1")
+	fmt.Println(cc)
+}
+
+func TestPatchPolicyIndex(t *testing.T) {
+	as3cfg := As3Config{
+		ClusterName:          "dwb",
+		IsSupportRouteDomain: true,
+		Tenant: []TenantConfig{
+			{
+				Name:       "partition2",
+				Namespaces: "test1",
+				RouteDomain: RouteDomain{
+					Id:   2,
+					Name: "rd2",
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{
+						"1.1.6.1",
+					},
+				},
+			}, {
+				Name:       "partition3",
+				Namespaces: "test2",
+				RouteDomain: RouteDomain{
+					Id:   3,
+					Name: "rd3",
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{
+						"1.1.6.1",
+					},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg)
+
+	body := PatchBody{}
+
+	aa := FirewallPolicy{
+		Rules: []Use{
+			//{
+			//	Use: "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_rule_list",
+			//},
+			//{
+			//	Use: "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_rule_list",
+			//},
+			//{
+			//	Use: "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_rule_list",
+			//},
+			//{
+			//	Use: "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_rule_list",
+			//},
+		},
+	}
+
+	bb := FirewallPolicy{
+		Rules: []Use{
+			{
+				Use: "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_rule_list",
+			},
+		},
+	}
+	path := "/Common/Shared/dwb_svc_policy_rd"
+	printObj(policyPatchJson(aa, bb, path, body, false))
+}
+
+func printObj(obj interface{}) {
+	data, _ := json.Marshal(obj)
+	fmt.Println(string(data))
+}
+
+func TestGetPartiton(t *testing.T) {
+	adcStr := `{
+    "Common": {
+        "Shared": {
+            "class": "Application",
+            "dwb_global_cgr1_ext_exsvc-c1_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_global_cgr1_ext_exsvc-c1_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr1_ext_exsvc-c1_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr1_ext_exsvc-c1_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-c1_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr1_ext_exsvc-c1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr1_ext_exsvc-c1_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-c1_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr1_ext_exsvc-c1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr1_ext_exsvc-c1_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_global_cgr2_ext_exsvc-c2_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_global_cgr2_ext_exsvc-c2_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr2_ext_exsvc-c2_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr2_ext_exsvc-c2_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-c2_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr2_ext_exsvc-c2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr2_ext_exsvc-c2_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-c2_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr2_ext_exsvc-c2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr2_ext_exsvc-c2_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_global_cgr3_ext_exsvc-c3_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_global_cgr3_ext_exsvc-c3_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr3_ext_exsvc-c3_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr3_ext_exsvc-c3_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-c3_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr3_ext_exsvc-c3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr3_ext_exsvc-c3_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-c3_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr3_ext_exsvc-c3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr3_ext_exsvc-c3_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_global_cgr4_ext_exsvc-c4_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_global_cgr4_ext_exsvc-c4_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr4_ext_exsvc-c4_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_global_cgr4_ext_exsvc-c4_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-c4_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr4_ext_exsvc-c4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr4_ext_exsvc-c4_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-c4_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr4_ext_exsvc-c4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_global_cgr4_ext_exsvc-c4_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {},
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_gw_pool": {
+                "class": "Pool",
+                "members": [
+                    {
+                        "serverAddresses": [
+                            "1.1.5.1"
+                        ],
+                        "enable": true,
+                        "servicePort": 0
+                    }
+                ],
+                "monitors": [
+                    {
+                        "bigip": "/Common/gateway_icmp"
+                    }
+                ]
+            },
+            "dwb_ns_policy_rd": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_rule_list"
+                    }
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns1_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns1_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.0.0/16"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns2_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns2_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.0.0/16"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns3_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns3_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.4.0.0/16"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns4_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns4_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.4.0.0/16"
+                ]
+            },
+            "dwb_outbound_vs": {
+                "layer4": "any",
+                "translateServerAddress": false,
+                "translateServerPort": false,
+                "virtualAddresses": [
+                    "0.0.0.0"
+                ],
+                "policyFirewallEnforced": {
+                    "use": "/Common/Shared/dwb_svc_policy_rd"
+                },
+                "virtualPort": 0,
+                "snat": "auto",
+                "class": "Service_L4",
+                "pool": "dwb_gw_pool"
+            },
+            "dwb_svc_deny_all_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "any",
+                        "name": "deny_all_rule",
+                        "destination": {},
+                        "source": {},
+                        "action": "drop"
+                    }
+                ]
+            },
+            "dwb_svc_policy_rd": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/Common/Shared/dwb_svc_deny_all_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_rule_list"
+                    }
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc1_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc1_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc2_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc2_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc3_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc3_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc4_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc4_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/Common/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "dwb_system_global_policy": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/Common/Shared/dwb_global_cgr1_ext_exsvc-c1_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_global_cgr2_ext_exsvc-c2_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_global_cgr3_ext_exsvc-c3_rule_list"
+                    },
+                    {
+                        "use": "/Common/Shared/dwb_global_cgr4_ext_exsvc-c4_rule_list"
+                    }
+                ]
+            },
+            "template": "shared"
+        },
+        "class": "Tenant"
+    },
+    "partition2": {
+        "Shared": {
+            "class": "Application",
+            "dwb_gw_pool": {
+                "class": "Pool",
+                "members": [
+                    {
+                        "serverAddresses": [
+                            "1.1.6.1"
+                        ],
+                        "enable": true,
+                        "servicePort": 0
+                    }
+                ],
+                "monitors": [
+                    {
+                        "bigip": "/Common/gateway_icmp"
+                    }
+                ]
+            },
+            "dwb_ns_policy_rd2": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_rule_list"
+                    },
+                    {
+                        "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_rule_list"
+                    }
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns1_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns1_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr1_ext_exsvc-ns1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test1_nsgr1_ext_exsvc-ns1_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.0.0/16"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns2_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns2_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_ns_test1_nsgr2_ext_exsvc-ns2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test1_nsgr2_ext_exsvc-ns2_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.0.0/16"
+                ]
+            },
+            "dwb_outbound_vs": {
+                "layer4": "any",
+                "translateServerAddress": false,
+                "translateServerPort": false,
+                "virtualAddresses": [
+                    "0.0.0.0"
+                ],
+                "policyFirewallEnforced": {
+                    "use": "/partition2/Shared/dwb_svc_policy_rd2"
+                },
+                "virtualPort": 0,
+                "snat": "auto",
+                "class": "Service_L4",
+                "pool": "dwb_gw_pool"
+            },
+            "dwb_svc_deny_all_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "any",
+                        "name": "deny_all_rule",
+                        "destination": {},
+                        "source": {},
+                        "action": "drop"
+                    }
+                ]
+            },
+            "dwb_svc_policy_rd2": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/partition2/Shared/dwb_svc_deny_all_rule_list"
+                    },
+                    {
+                        "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_rule_list"
+                    },
+                    {
+                        "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_rule_list"
+                    }
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc1_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc1_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr1_ext_exsvc-svc1_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test1_svcgr1_ext_exsvc-svc1_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc2_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc2_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition2/Shared/dwb_svc_test1_svcgr2_ext_exsvc-svc2_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test1_svcgr2_ext_exsvc-svc2_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "template": "shared"
+        },
+        "class": "Tenant",
+        "defaultRouteDomain": 2
+    },
+    "partition3": {
+        "Shared": {
+            "class": "Application",
+            "dwb_gw_pool": {
+                "class": "Pool",
+                "members": [
+                    {
+                        "serverAddresses": [
+                            "1.1.6.1"
+                        ],
+                        "enable": true,
+                        "servicePort": 0
+                    }
+                ],
+                "monitors": [
+                    {
+                        "bigip": "/Common/gateway_icmp"
+                    }
+                ]
+            },
+            "dwb_ns_policy_rd3": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_rule_list"
+                    },
+                    {
+                        "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_rule_list"
+                    }
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns3_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns3_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr3_ext_exsvc-ns3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test2_nsgr3_ext_exsvc-ns3_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.4.0.0/16"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-ns4_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-ns4_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_ns_test2_nsgr4_ext_exsvc-ns4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_ns_test2_nsgr4_ext_exsvc-ns4_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.4.0.0/16"
+                ]
+            },
+            "dwb_outbound_vs": {
+                "layer4": "any",
+                "translateServerAddress": false,
+                "translateServerPort": false,
+                "virtualAddresses": [
+                    "0.0.0.0"
+                ],
+                "policyFirewallEnforced": {
+                    "use": "/partition3/Shared/dwb_svc_policy_rd3"
+                },
+                "virtualPort": 0,
+                "snat": "auto",
+                "class": "Service_L4",
+                "pool": "dwb_gw_pool"
+            },
+            "dwb_svc_deny_all_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "any",
+                        "name": "deny_all_rule",
+                        "destination": {},
+                        "source": {},
+                        "action": "drop"
+                    }
+                ]
+            },
+            "dwb_svc_policy_rd3": {
+                "class": "Firewall_Policy",
+                "rules": [
+                    {
+                        "use": "/partition3/Shared/dwb_svc_deny_all_rule_list"
+                    },
+                    {
+                        "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_rule_list"
+                    },
+                    {
+                        "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_rule_list"
+                    }
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc3_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc3_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr3_ext_exsvc-svc3_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test2_svcgr3_ext_exsvc-svc3_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "211.6.6.7"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_tcp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_udp": {
+                "class": "Firewall_Port_List",
+                "ports": [
+                    "9090"
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_rule_list": {
+                "class": "Firewall_Rule_List",
+                "rules": [
+                    {
+                        "protocol": "udp",
+                        "name": "accept_exsvc-svc4_udp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_udp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    },
+                    {
+                        "protocol": "tcp",
+                        "name": "accept_exsvc-svc4_tcp",
+                        "destination": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_address"
+                                }
+                            ],
+                            "portLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_ports_tcp"
+                                }
+                            ]
+                        },
+                        "source": {
+                            "addressLists": [
+                                {
+                                    "use": "/partition3/Shared/dwb_svc_test2_svcgr4_ext_exsvc-svc4_src_address"
+                                }
+                            ]
+                        },
+                        "action": "accept"
+                    }
+                ]
+            },
+            "dwb_svc_test2_svcgr4_ext_exsvc-svc4_src_address": {
+                "class": "Firewall_Address_List",
+                "addresses": [
+                    "10.3.67.23"
+                ]
+            },
+            "template": "shared"
+        },
+        "class": "Tenant",
+        "defaultRouteDomain": 3
+    },
+    "class": "ADC",
+    "id": "k8s-ces-controller",
+    "schemaVersion": "3.29.0",
+    "updateMode": "selective",
+    "controls": {
+        "archiveTimestamp": "2021-09-07T09:22:14.510Z"
+    }
+}
+`
+	var adc = as3ADC{}
+	json.Unmarshal([]byte(adcStr), &adc)
+	partition := "partition2"
+	printObj(adc.getAS3SharedApp(partition))
+}
+
+func TestAs3PostDefaultPartition(t *testing.T) {
+	as3cfg := As3Config{
+		ClusterName:          "k8s",
+		IsSupportRouteDomain: false,
+		Tenant: []TenantConfig{
+			{
+				Name:        DefaultPartition,
+				RouteDomain: RouteDomain{},
+			},
+		},
+	}
+	initTenantConfig(as3cfg)
+	as3 := initDefaultAS3()
+	printObj(as3)
+}
+
+func TestMockClusteEgressRule(t *testing.T) {
+	clusterEgressList := kubeovnv1alpha1.ClusterEgressRuleList{
+		Items: []kubeovnv1alpha1.ClusterEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: kubeovnv1alpha1.ClusterEgressRuleSpec{
+					Action:           "accept",
+					ExternalServices: []string{"exsvc-test1", "exsvc-test2"},
+				},
+			},
+		},
+	}
+
+	externalServiceList := kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test1",
+					Namespace: "kube-system",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.0",
+						"192.168.2.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp1",
+							Protocol: "tcp",
+							Port:     "8080",
+						},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test2",
+					Namespace: "kube-system",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.10.0",
+						"192.168.20.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp2",
+							Protocol: "tcp",
+							Port:     "8081",
+						}, {
+							Name:     "udp2",
+							Protocol: "udp",
+							Port:     "9090",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	as3cfg := As3Config{
+		ClusterName:          "k8s",
+		IsSupportRouteDomain: false,
+		Tenant: []TenantConfig{
+			{
+				Name: "Common",
+				RouteDomain: RouteDomain{
+					Name: "0",
+					Id:   0,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.1"},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg)
+	tntcfg := GetTenantConfigForParttition(DefaultPartition)
+
+	as3post := newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	as3 := initDefaultAS3()
+	printObj(as3)
+	srcAdc := as3[DeclarationKey].(as3ADC)
+	adc := as3ADC{}
+	as3post.generateAS3ResourceDeclaration(adc)
+	body := fullResource(DefaultPartition, false, srcAdc, adc)
+	printObj(body)
+
+	//add the same clusteregressrule at above as3
+	clusterEgressList = kubeovnv1alpha1.ClusterEgressRuleList{
+		Items: []kubeovnv1alpha1.ClusterEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+				Spec: kubeovnv1alpha1.ClusterEgressRuleSpec{
+					Action:           "accept",
+					ExternalServices: []string{"exsvc-test1", "exsvc-test2"},
+				},
+			},
+		},
+	}
+
+	externalServiceList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test1",
+					Namespace: "kube-system",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.0",
+						"192.168.2.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp1",
+							Protocol: "tcp",
+							Port:     "8080",
+						},
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test2",
+					Namespace: "kube-system",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.10.0",
+						"192.168.20.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp2",
+							Protocol: "tcp",
+							Port:     "8081",
+						}, {
+							Name:     "udp2",
+							Protocol: "udp",
+							Port:     "9090",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	deltaAdc := as3ADC{}
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+
+	var srcAs3 map[string]interface{}
+	err := validateJSONAndFetchObject(body, &srcAs3)
+	if err != nil {
+		t.Error(err)
+	}
+	srcAdc = as3ADC(srcAs3[DeclarationKey].(map[string]interface{}))
+	body = fullResource(DefaultPartition, false, srcAdc, deltaAdc)
+
+	printObj(body)
+
+	//add diff clusteregressrule
+	clusterEgressList = kubeovnv1alpha1.ClusterEgressRuleList{
+		Items: []kubeovnv1alpha1.ClusterEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test3",
+				},
+				Spec: kubeovnv1alpha1.ClusterEgressRuleSpec{
+					Action:           "accept",
+					ExternalServices: []string{"exsvc-test3"},
+				},
+			},
+		},
+	}
+
+	externalServiceList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test3",
+					Namespace: "kube-system",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"182.16.16.19",
+						"182.181.1.1",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp1",
+							Protocol: "tcp",
+							Port:     "1010",
+						}, {
+							Name:     "upd1",
+							Protocol: "udp",
+							Port:     "2020",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	deltaAdc = as3ADC{}
+	srcAs3 = map[string]interface{}{}
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+	err = validateJSONAndFetchObject(body, &srcAs3)
+	if err != nil {
+		t.Error(err)
+	}
+	srcAdc = as3ADC(srcAs3[DeclarationKey].(map[string]interface{}))
+	body = fullResource(DefaultPartition, false, srcAdc, deltaAdc)
+	printObj(body)
+
+	//delete clusteregressrule
+	srcAs3 = map[string]interface{}{}
+	err = validateJSONAndFetchObject(body, &srcAs3)
+	if err != nil {
+		t.Error(err)
+	}
+	srcAdc = as3ADC(srcAs3[DeclarationKey].(map[string]interface{}))
+	body = fullResource(DefaultPartition, true, srcAdc, deltaAdc)
+	printObj(body)
+}
+
+func TestMockNamespaceEgressRule(t *testing.T) {
+	namespaceEgressRuleList := kubeovnv1alpha1.NamespaceEgressRuleList{
+		Items: []kubeovnv1alpha1.NamespaceEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "project1",
+				},
+				Spec: kubeovnv1alpha1.NamespaceEgressRuleSpec{
+					Action:           "accept",
+					ExternalServices: []string{"exsvc-test1", "exsvc-test2"},
+				},
+			},
+		},
+	}
+	externalServiceList := kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test1",
+					Namespace: "project1",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.0",
+						"192.168.2.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp1",
+							Protocol: "tcp",
+							Port:     "8080",
+						},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test2",
+					Namespace: "project1",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.10.0",
+						"192.168.20.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp2",
+							Protocol: "tcp",
+							Port:     "8081",
+						}, {
+							Name:     "udp2",
+							Protocol: "udp",
+							Port:     "9090",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3cfg := As3Config{
+		ClusterName:          "k8s",
+		IsSupportRouteDomain: false,
+		Tenant: []TenantConfig{
+			{
+				Name:       "Common",
+				Namespaces: "xxxxxxxx",
+				RouteDomain: RouteDomain{
+					Name: "0",
+					Id:   0,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.1"},
+				},
+			},
+			{
+				Name:       "project1",
+				Namespaces: "project1",
+				RouteDomain: RouteDomain{
+					Name: "rd1",
+					Id:   1,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.101.100.1"},
+				},
+			}, {
+				Name:       "project2",
+				Namespaces: "project2",
+				RouteDomain: RouteDomain{
+					Name: "rd2",
+					Id:   2,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.101.111.1"},
+				},
+			},
+		},
+	}
+
+	namespaceList := corev1.NamespaceList{
+		Items: []corev1.Namespace{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "project1",
+					Annotations: map[string]string{
+						NamespaceCidr: "10.1.0.1/16",
+					},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg)
+	tntcfg := GetTenantConfigForParttition(DefaultPartition)
+
+	as3post := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
+
+	as3 := initDefaultAS3()
+	printObj(as3)
+
+	srcAs3 := map[string]interface{}{}
+	err := validateJSONAndFetchObject(as3, &srcAs3)
+	if err != nil {
+		t.Error(err)
+	}
+	srcAdc := as3ADC(srcAs3[DeclarationKey].(map[string]interface{}))
+	deltaAdc := as3ADC{}
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+	body := fullResource("Common", false, srcAdc, deltaAdc)
+	t.Log("==================>init namespaceegressrule")
+	printObj(body)
+
+	//add same namespaceegressrule
+	t.Log("==================>add same namespaceegressrule")
+	srcAs3 = map[string]interface{}{}
+	err = validateJSONAndFetchObject(body, &srcAs3)
+	if err != nil {
+		t.Error(err)
+	}
+	srcAdc = as3ADC(srcAs3[DeclarationKey].(map[string]interface{}))
+	body = fullResource("Common", false, srcAdc, deltaAdc)
+	printObj(body)
+
+	//surpport rd in common
+	t.Log("==================>surpport rd")
+	as3cfg.IsSupportRouteDomain = true
+	initTenantConfig(as3cfg)
+	tntcfg = GetTenantConfigForParttition("project1")
+	as3post = newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
+	deltaAdc = as3ADC{}
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+	body = fullResource("project1", false, srcAdc, deltaAdc)
+	printObj(body)
+
+	//surpport rd in common
+	t.Log("==================>delete partition")
+	body = fullResource("project1", true, srcAdc, deltaAdc)
+	printObj(body)
+
+	//add diff namespaceegressrule
+	t.Log("==================>add diff namespaceegressrule")
+	namespaceEgressRuleList = kubeovnv1alpha1.NamespaceEgressRuleList{
+		Items: []kubeovnv1alpha1.NamespaceEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test2",
+					Namespace: "project2",
+				},
+				Spec: kubeovnv1alpha1.NamespaceEgressRuleSpec{
+					Action:           "accept",
+					ExternalServices: []string{"exsvc-test3", "exsvc-test4"},
+				},
+			},
+		},
+	}
+	externalServiceList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test3",
+					Namespace: "project2",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.3.0",
+						"192.168.4.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp1",
+							Protocol: "tcp",
+							Port:     "1010",
+						},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "exsvc-test4",
+					Namespace: "project2",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.30.0",
+						"192.168.40.0",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name:     "tcp2",
+							Protocol: "tcp",
+							Port:     "8081",
+						}, {
+							Name:     "udp2",
+							Protocol: "udp",
+							Port:     "9090",
+						},
+					},
+				},
+			},
+		},
+	}
+	namespaceList = corev1.NamespaceList{
+		Items: []corev1.Namespace{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "project2",
+					Annotations: map[string]string{
+						NamespaceCidr: "10.1.0.1/16",
+					},
+				},
+			},
+		},
+	}
+	tntcfg = GetTenantConfigForParttition(DefaultPartition)
+	as3post1 := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
+	deltaAdc = as3ADC{}
+	as3post1.generateAS3ResourceDeclaration(deltaAdc)
+	body = fullResource("Common", false, srcAdc, deltaAdc)
+	printObj(body)
+	//delete namespaceegressrule
+	body = fullResource("Common", true, srcAdc, deltaAdc)
+	printObj(body)
+}
+
+func TestRomteLog(t *testing.T) {
+	as3cfg := As3Config{
+		ClusterName:          "dwb",
+		MasterCluster:        "master",
+		IsSupportRouteDomain: false,
+		LogPool: LogPool{
+			EnableRemoteLog: false,
+			ServerAddresses: []string{"1.1.1.1"},
+			Template: `
+{
+    "k8s_afm_hsl_log_profile": {
+        "network": {
+            "publisher": {
+                "use": "/Common/Shared/k8s_firewall_hsl_log_publisher"
+            },
+            "storageFormat": {
+                "fields": [
+                    "bigip-hostname",
+                    "acl-rule-name",
+                    "acl-policy-name",
+                    "acl-policy-type",
+                    "protocol",
+                    "action",
+                    "drop-reason",
+                    "context-name",
+                    "context-type",
+                    "date-time",
+                    "src-ip",
+                    "src-port",
+                    "vlan",
+                    "route-domain",
+                    "dest-ip",
+                    "dest-port"
+                ]
+            },
+            "logRuleMatchAccepts": true,
+            "logRuleMatchRejects": true,
+            "logRuleMatchDrops": true,
+            "logIpErrors": true,
+            "logTcpErrors": true,
+            "logTcpEvents": true
+        },
+        "class": "Security_Log_Profile"
+    },
+    "k8s_firewall_hsl_log_publisher": {
+        "destinations": [
+            {
+                "use": "/Common/Shared/k8s_remote-hsl-dest"
+            },
+            {
+                "use": "/Common/Shared/k8s_remote-hsl-dest-format"
+            },
+            {
+                "bigip": "/Common/local-db"
+            }
+        ],
+        "class": "Log_Publisher"
+    },
+    "k8s_remote-hsl-dest": {
+        "pool": {
+            "use": "/Common/Shared/k8s_log_pool"
+        },
+        "class": "Log_Destination",
+        "type": "remote-high-speed-log"
+    },
+    "k8s_remote-hsl-dest-format": {
+        "format": "rfc5424",
+        "remoteHighSpeedLog": {
+            "use": "/Common/Shared/k8s_remote-hsl-dest"
+        },
+        "class": "Log_Destination",
+        "type": "remote-syslog"
+    }
+}`,
+		},
+		Tenant: []TenantConfig{
+			{
+				Name:       "Common",
+				Namespaces: "xxxxxxxx",
+				RouteDomain: RouteDomain{
+					Name: "0",
+					Id:   0,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.1"},
+				},
+			},
+			{
+				Name:       "project1",
+				Namespaces: "project1",
+				RouteDomain: RouteDomain{
+					Name: "rd1",
+					Id:   1,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.101.100.1"},
+				},
+			}, {
+				Name:       "project2",
+				Namespaces: "project2",
+				RouteDomain: RouteDomain{
+					Name: "rd2",
+					Id:   2,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.101.111.1"},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg)
+	post := &as3Post{
+		tenantConfig: &as3cfg.Tenant[0],
+	}
+	app := as3Application{}
+	post.newLogPoolDecl(app)
+	printObj(app)
+
+	as3cfg.LogPool.EnableRemoteLog = true
+	initTenantConfig(as3cfg)
+	post = &as3Post{
+		tenantConfig: &as3cfg.Tenant[0],
+	}
+	app = as3Application{}
+	post.newLogPoolDecl(app)
+	printObj(app)
+
+	as3cfg.LogPool.EnableRemoteLog = false
+	initTenantConfig(as3cfg)
+	post = &as3Post{
+		tenantConfig: &as3cfg.Tenant[1],
+	}
+	app = as3Application{}
+	post.newLogPoolDecl(app)
+	printObj(app)
+}

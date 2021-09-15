@@ -35,7 +35,7 @@ type Client struct {
 	username string
 	password string
 	//use to request other not as3 api
-	host     string
+	host string
 	*http.Client
 	sync.Mutex
 }
@@ -45,11 +45,10 @@ func NewClient(ip, username, password string, insecure bool) *Client {
 		url:      fmt.Sprintf("https://%s/mgmt/shared/appsvcs/declare/", ip),
 		username: username,
 		password: password,
-		host: "https://" + ip,
+		host:     "https://" + ip,
 		Client: &http.Client{
 			Timeout: 60 * time.Second,
 		},
-
 	}
 
 	if insecure {
@@ -61,6 +60,60 @@ func NewClient(ip, username, password string, insecure bool) *Client {
 	}
 
 	return client
+}
+
+func (c *Client) post(data interface{}, partitions ...string) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	url := c.url
+	if string(url[len(url)-1]) != "/" {
+		url = url + "/"
+	}
+	for i, partition := range partitions {
+		if i == len(partitions)-1 {
+			url = fmt.Sprintf("%s%s", url, partition)
+		} else {
+			url = fmt.Sprintf("%s,%s", url, partition)
+		}
+	}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(b))
+	if err != nil {
+		klog.Errorf("Failed to create AS3 request: %v", err)
+		return err
+	}
+
+	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
+
+	req.SetBasicAuth(c.username, c.password)
+
+	c.Lock()
+	defer c.Unlock()
+
+	resp, err := c.Do(req)
+	if err != nil {
+		klog.Errorf("Failed to call AS3 API: %v", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		klog.Errorf("Failed to read response body: %v", err)
+		return err
+	}
+
+	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
+	klog.Infof("response: body = %s", string(respBody))
+
+	var response map[string]interface{}
+	if err = json.Unmarshal(respBody, &response); err != nil {
+		klog.Errorf("Failed to unmarshal response body: %v", err)
+		return err
+	}
+
+	return handleResponse(resp.StatusCode, response)
 }
 
 func (c *Client) Get(partition string) (string, error) {
@@ -150,7 +203,7 @@ func (c *Client) Post(data interface{}) error {
 }
 
 func (c *Client) Patch(patchItems ...PatchItem) error {
-	if len(patchItems)  == 0{
+	if len(patchItems) == 0 {
 		klog.Info("no data need to patch")
 		return nil
 	}
@@ -215,9 +268,9 @@ func handleResponse(statusCode int, response map[string]interface{}) error {
 	return fmt.Errorf("AS3 responds with status code %d - %s", statusCode, http.StatusText(statusCode))
 }
 
-func(c *Client)PatchF5Reource( obj interface{}, url string) error{
-	data ,err := json.Marshal(obj)
-	if err != nil{
+func (c *Client) PatchF5Reource(obj interface{}, url string) error {
+	data, err := json.Marshal(obj)
+	if err != nil {
 		return err
 	}
 	url = c.host + url
@@ -256,7 +309,7 @@ func(c *Client)PatchF5Reource( obj interface{}, url string) error{
 	}
 
 	err = handleResponse(resp.StatusCode, response)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	return nil
@@ -299,11 +352,11 @@ func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err
 }
 
 func (c *Client) PostF5Resouce(obj interface{}, url string) error {
-	data ,err := json.Marshal(obj)
-	if err != nil{
+	data, err := json.Marshal(obj)
+	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPost, c.host + url, bytes.NewBuffer(data))
+	req, err := http.NewRequest(http.MethodPost, c.host+url, bytes.NewBuffer(data))
 	if err != nil {
 		klog.Errorf("Failed to create AS3 request: %v", err)
 		return err
@@ -339,21 +392,21 @@ func (c *Client) PostF5Resouce(obj interface{}, url string) error {
 	}
 
 	err = handleResponse(resp.StatusCode, response)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Client) StoreDisk()error{
+func (c *Client) StoreDisk() error {
 	obj := struct {
 		Commond string `json:"command"`
 	}{
 		Commond: "save",
 	}
 
-	data ,err := json.Marshal(obj)
-	if err != nil{
+	data, err := json.Marshal(obj)
+	if err != nil {
 		return err
 	}
 	url := c.host + "/mgmt/tm/sys/config"

@@ -10,7 +10,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
-	"strings"
 )
 
 func (c *Controller) processNextExternalServiceWorkItem() bool {
@@ -81,28 +80,21 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 			c.recorder.Event(service, corev1.EventTypeWarning, err.Error(), MessageResourceFailedSynced)
 		}
 	}()
-
-	portMap := make(map[string][]string)
-	for _, port := range service.Spec.Ports {
-		if port.Port != "" {
-			protocol := strings.ToLower(port.Protocol)
-			portMap[protocol] = append(portMap[protocol], strings.Split(port.Port, ",")...)
-		}
-	}
-
 	ruleType := es.Labels[as3.RuleTypeLabel]
-	portLists := make([]as3.PatchItem, 0)
-	addrList := as3.PatchItem{
-		Op: as3.OpReplace,
-		Value: as3.FirewallAddressList{
-			Class:     as3.ClassFirewallAddressList,
-			Addresses: service.Spec.Addresses,
+	find := false
+	clusterEgressruleList := kubeovn.ClusterEgressRuleList{}
+	namespaceEgressRuleList := kubeovn.NamespaceEgressRuleList{}
+	serviceEgressRuleList := kubeovn.ServiceEgressRuleList{}
+	externalServicesList := kubeovn.ExternalServiceList{
+		Items: []kubeovn.ExternalService{
+			*service,
 		},
 	}
-	find := false
+	tntcfg := &as3.TenantConfig{}
 	switch ruleType {
 	case as3.RuleTypeGlobal:
 		ruleList, err := c.clusterEgressRuleLister.List(labels.Everything())
+
 		if err != nil {
 			return err
 		}
@@ -113,28 +105,14 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 			for _, exSvc := range rule.Spec.ExternalServices {
 				if exSvc == es.Name {
 					find = true
-					addrList.Path = fmt.Sprintf("/Common/Shared/%s_global_%s_ext_%s_address", as3.GetCluster(), rule.Name,
-						service.Name)
-					for protocol, ports := range portMap {
-						if len(ports) != 0 {
-							patchItem := as3.PatchItem{
-								Op: as3.OpReplace,
-								Value: as3.FirewallPortList{
-									Class: as3.ClassFirewallPortList,
-									Ports: ports,
-								},
-							}
-							patchItem.Path = fmt.Sprintf("/Common/Shared/%s_global_%s_ext_%s_ports_%s", as3.GetCluster(),
-								rule.Name, service.Name, protocol)
-							portLists = append(portLists, patchItem)
-						}
-					}
+					clusterEgressruleList.Items = append(clusterEgressruleList.Items, *rule)
 					break
 				}
 			}
 		}
+		tntcfg = as3.GetTenantConfigForParttition(as3.DefaultPartition)
 	case as3.RuleTypeNamespace:
-		ruleList, err := c.namespaceEgressRuleLister.List(labels.Everything())
+		ruleList, err := c.namespaceEgressRuleLister.NamespaceEgressRules(es.Namespace).List(labels.Everything())
 		if err != nil {
 			return err
 		}
@@ -145,29 +123,14 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 			for _, exSvc := range rule.Spec.ExternalServices {
 				if exSvc == es.Name {
 					find = true
-					pathProfix := as3.AS3PathPrefix(as3.GetConfigNamespace(rule.Namespace))
-					addrList.Path = fmt.Sprintf("%s_ns_%s_%s_ext_%s_address", pathProfix, rule.Namespace, rule.Name, service.Name)
-					for protocol, ports := range portMap {
-						if len(ports) != 0 {
-							patchItem := as3.PatchItem{
-								Op: as3.OpReplace,
-								Value: as3.FirewallPortList{
-									Class: as3.ClassFirewallPortList,
-									Ports: ports,
-								},
-							}
-
-							patchItem.Path = fmt.Sprintf("%s_ns_%s_%s_ext_%s_ports_%s", pathProfix, rule.Namespace,
-								rule.Name, service.Name, protocol)
-							portLists = append(portLists, patchItem)
-						}
-					}
+					namespaceEgressRuleList.Items = append(namespaceEgressRuleList.Items, *rule)
 					break
 				}
 			}
 		}
+		tntcfg = as3.GetTenantConfigForNamespace(service.Namespace)
 	case as3.RuleTypeService:
-		ruleList, err := c.seviceEgressRuleLister.List(labels.Everything())
+		ruleList, err := c.seviceEgressRuleLister.ServiceEgressRules(es.Namespace).List(labels.Everything())
 		if err != nil {
 			return err
 		}
@@ -177,42 +140,28 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 			}
 			for _, exSvc := range rule.Spec.ExternalServices {
 				if exSvc == es.Name {
-					pathProfix := as3.AS3PathPrefix(as3.GetConfigNamespace(rule.Namespace))
 					find = true
-					addrList.Path = fmt.Sprintf("%s_svc_%s_%s_ext_%s_address", pathProfix, rule.Namespace, rule.Name, service.Name)
-					for protocol, ports := range portMap {
-						if len(ports) != 0 {
-							patchItem := as3.PatchItem{
-								Op: as3.OpReplace,
-								Value: as3.FirewallPortList{
-									Class: as3.ClassFirewallPortList,
-									Ports: ports,
-								},
-							}
-
-							patchItem.Path = fmt.Sprintf("%s_svc_%s_%s_ext_%s_ports_%s", pathProfix, rule.Namespace, rule.Name,
-								service.Name, protocol)
-							portLists = append(portLists, patchItem)
-						}
-					}
+					serviceEgressRuleList.Items = append(serviceEgressRuleList.Items, *rule)
 					break
 				}
 			}
 		}
+		tntcfg = as3.GetTenantConfigForNamespace(service.Namespace)
 	default:
 		klog.Info("don,t neet sync!")
 		return nil
 	}
 
-	if addrList.Path == "" {
+	if len(serviceEgressRuleList.Items) == 0 && len(namespaceEgressRuleList.Items) == 0 && len(clusterEgressruleList.Items) == 0 {
+		klog.Info("not found Associated rules，don,t neet sync!!")
 		return nil
 	}
-	if err = c.as3Client.Patch(append(portLists, addrList)...); err != nil {
-		err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
+	err = c.as3Client.As3Request(&serviceEgressRuleList, &namespaceEgressRuleList, &clusterEgressruleList, &externalServicesList, nil, nil,
+		tntcfg, ruleType, false)
+	if err != nil {
 		klog.Error(err)
 		return err
 	}
-
 	c.recorder.Event(es, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }

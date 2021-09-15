@@ -43,7 +43,7 @@ import (
 
 const controllerAgentName = "ces-controller"
 
-const  ControllerConfigmap = "ces-controller-configmap"
+const ControllerConfigmap = "ces-controller-configmap"
 
 const (
 	// SuccessSynced is used as part of the Event 'reason' when a resource is synced
@@ -301,7 +301,7 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 	case *kubeovn.NamespaceEgressRule:
 		oldNsRule := old.(*kubeovn.NamespaceEgressRule)
 		newNsRule := new.(*kubeovn.NamespaceEgressRule)
-		nsConfig := as3.GetConfigNamespace(oldNsRule.Namespace)
+		nsConfig := as3.GetTenantConfigForNamespace(oldNsRule.Namespace)
 		if nsConfig == nil {
 			klog.Infof("namespace[%s] not in watch range ", oldNsRule.Namespace)
 			return false
@@ -329,7 +329,7 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 	case *kubeovn.ServiceEgressRule:
 		oldSvcRule := old.(*kubeovn.ServiceEgressRule)
 		newSvcRule := new.(*kubeovn.ServiceEgressRule)
-		nsConfig := as3.GetConfigNamespace(oldSvcRule.Namespace)
+		nsConfig := as3.GetTenantConfigForNamespace(oldSvcRule.Namespace)
 		if nsConfig == nil {
 			klog.Infof("namespace[%s] not in watch range ", oldSvcRule.Namespace)
 			return false
@@ -393,7 +393,7 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 	case *corev1.Endpoints:
 		oldEp := old.(*corev1.Endpoints)
 		newEp := new.(*corev1.Endpoints)
-		nsConfig := as3.GetConfigNamespace(oldEp.Namespace)
+		nsConfig := as3.GetTenantConfigForNamespace(oldEp.Namespace)
 		if nsConfig == nil {
 			klog.V(5).Infof("namespace[%s] not in watch range ", oldEp.Namespace)
 			return false
@@ -403,7 +403,7 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 			return false
 		}
 
-		if len(oldEp.Subsets) == 0 && len(newEp.Subsets)>0{
+		if len(oldEp.Subsets) == 0 && len(newEp.Subsets) > 0 {
 			return true
 		}
 

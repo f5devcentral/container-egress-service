@@ -10,7 +10,7 @@ type ClusterEgressRule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec ClusterEgressRuleSpec `json:"spec"`
+	Spec   ClusterEgressRuleSpec   `json:"spec"`
 	Status ClusterEgressRuleStatus `json:"status"`
 }
 
@@ -40,4 +40,3 @@ type ClusterEgressRuleList struct {
 
 	Items []ClusterEgressRule `json:"items"`
 }
-

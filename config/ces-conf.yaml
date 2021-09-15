@@ -1,38 +1,89 @@
 clusterName: k8s
 isSupportRouteDomain: false
 ##AS3 basic configuration
-base: '{
-  "class": "AS3",
-  "action": "deploy",
-  "persist": true,
-  "declaration": {
-    "class": "ADC",
-    "schemaVersion": "3.29.0",
-    "id": "k8s-ces-controller",
-    "Common": {}
-  }
-}'
-namespaces:
+##Multi-cluster docking single BIG-IP, controller Common init and remote log
+masterCluster: k8s
+schemaVersion: "3.28.0"
+logPool:
+  enableRemoteLog: false
+  serverAddresses:
+    - "1.2.3.4"
+  template: '{
+                 "k8s_afm_hsl_log_profile": {
+                     "network": {
+                         "publisher": {
+                             "use": "/Common/Shared/k8s_firewall_hsl_log_publisher"
+                         },
+                         "storageFormat": {
+                             "fields": [
+                                 "bigip-hostname",
+                                 "acl-rule-name",
+                                 "acl-policy-name",
+                                 "acl-policy-type",
+                                 "protocol",
+                                 "action",
+                                 "drop-reason",
+                                 "context-name",
+                                 "context-type",
+                                 "date-time",
+                                 "src-ip",
+                                 "src-port",
+                                 "vlan",
+                                 "route-domain",
+                                 "dest-ip",
+                                 "dest-port"
+                             ]
+                         },
+                         "logRuleMatchAccepts": true,
+                         "logRuleMatchRejects": true,
+                         "logRuleMatchDrops": true,
+                         "logIpErrors": true,
+                         "logTcpErrors": true,
+                         "logTcpEvents": true
+                     },
+                     "class": "Security_Log_Profile"
+                 },
+                 "k8s_firewall_hsl_log_publisher": {
+                     "destinations": [
+                         {
+                             "use": "/Common/Shared/k8s_remote-hsl-dest"
+                         },
+                         {
+                             "use": "/Common/Shared/k8s_remote-hsl-dest-format"
+                         },
+                         {
+                             "bigip": "/Common/local-db"
+                         }
+                     ],
+                     "class": "Log_Publisher"
+                 },
+                 "k8s_remote-hsl-dest": {
+                     "pool": {
+                         "use": "/Common/Shared/k8s_log_pool"
+                     },
+                     "class": "Log_Destination",
+                     "type": "remote-high-speed-log"
+                 },
+                 "k8s_remote-hsl-dest-format": {
+                     "format": "rfc5424",
+                     "remoteHighSpeedLog": {
+                         "use": "/Common/Shared/k8s_remote-hsl-dest"
+                     },
+                     "class": "Log_Destination",
+                     "type": "remote-syslog"
+                 }
+             }'
+tenant:
   ##common partiton config, init AS3 needs
-  - name: "__common__"
-    parttion: Common
+  - name: "Common"
+    namespaces: "default"
     virtualService:
       template: ''
     gwPool:
       serverAddresses:
         - "192.168.10.1"
-  - name: default
-    parttion: Common
-    routeDomain:
-      id: 0
-      name: "0"
-    virtualService:
-      template: ''
-    gwPool:
-      serverAddresses:
-        - "192.168.1.1"
   - name: project2
-    parttion: project2
+    namespaces: project2
     routeDomain:
       id: 2
       name: "rd2"
@@ -43,7 +94,7 @@ namespaces:
         - "1.16.10.22"
         - "192.168.10.22"
   - name: project3
-    parttion: project3
+    namespaces: project3
     routeDomain:
       id: 3
       name: "rd3"
@@ -53,7 +104,7 @@ namespaces:
       serverAddresses:
         - "10.16.10.23"
   - name: test-ns-a
-    parttion: test-ns-a
+    namespaces: test-ns-a
     routeDomain:
       id: 4
       name: "rd4"

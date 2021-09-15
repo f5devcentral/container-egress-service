@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_CreatePolicy(t *testing.T){
+func Test_CreatePolicy(t *testing.T) {
 	//client := Client{
 	//	password: "nihao666",
 	//	username: "admin",
@@ -23,7 +23,5 @@ func Test_CreatePolicy(t *testing.T){
 	//key := "/Common/Shared/k8s_ns_policy_rdrd_test"[:strings.LastIndex("/Common/Shared/k8s_ns_policy_rdrd_test", "/")+1]
 	//fmt.Println(key)
 
-
 	//isObj1ContainsObj2()
 }
-

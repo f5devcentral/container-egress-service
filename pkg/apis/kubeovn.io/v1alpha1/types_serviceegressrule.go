@@ -18,7 +18,6 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -28,17 +27,16 @@ type ServiceEgressRule struct {
 	metav1.ObjectMeta `json:"metadata"`
 
 	Spec ServiceEgressRuleSpec `json:"spec"`
-	
+
 	Status ServiceEgressRuleStatus `json:"status"`
 }
 
 // ServiceEgressRuleSpec is the spec for an F5TrafficControlRule resource
 type ServiceEgressRuleSpec struct {
 	Action           string   `json:"action"`
-	Service         string    `json:"service"`
+	Service          string   `json:"service"`
 	ExternalServices []string `json:"externalServices"`
 }
-
 
 type ServiceEgressRuleStatus struct {
 	Phase ServiceEgressRulePhase `json:"phase,omitempty"`

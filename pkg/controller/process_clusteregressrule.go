@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/as3"
 	corev1 "k8s.io/api/core/v1"
@@ -90,126 +89,44 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		}
 	}()
 
-	exsvcs := make([]kubeovn.ExternalService, len(rule.Spec.ExternalServices))
-	for i, svcName := range rule.Spec.ExternalServices {
-		exsvcs[i] = kubeovn.ExternalService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      svcName,
-				Namespace: as3.ClusterSvcExtNamespace,
-			},
+	clusterEgressruleList := kubeovn.ClusterEgressRuleList{
+		Items: []kubeovn.ClusterEgressRule{
+			*rule,
+		},
+	}
+	externalServicesList := kubeovn.ExternalServiceList{}
+	for _, exsvcName := range rule.Spec.ExternalServices {
+		exsvc, err := c.externalServicesLister.ExternalServices(as3.ClusterSvcExtNamespace).Get(exsvcName)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+			klog.Warningf("externalService[%s/%s] does not exist", exsvc.Namespace, exsvc.Name)
+			continue
 		}
-	}
-	eg := egress{
-		name:rule.Name,
-		exsvcs: exsvcs,
-		action: rule.Spec.Action,
-		ruleType: as3.RuleTypeGlobal,
+
+		//update ext ruleType namespace
+		if exsvc.Labels == nil {
+			exsvc.Labels = make(map[string]string, 1)
+		}
+
+		if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeGlobal {
+			exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeGlobal
+			_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
+				metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+		}
+		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
 	}
 
-	nsConfig := &as3.As3Namespace{
-		Parttion: as3.CommonKey,
-	}
-
-	globalPolicyPath, patchBody, err := c.pkgEgress(eg, nsConfig)
-	if err != nil{
-		return err
-	}
-
-	//// get AS3 declaration
-	//adc, err := c.as3Client.Get("Common")
-	//if err != nil {
-	//	return fmt.Errorf("failed to get rule list index: %v", err)
-	//}
-	//
-	////Determine to update the rules in all patch bodies
-	//patchBody = as3.JudgeSelectedUpdate(adc, patchBody, isDelete)
-	//
-	//// find global polices, if exists: global policy have created
-	//if ok := gjson.Get(adc, fmt.Sprintf("Common.Shared.%s_system_global_policy", as3.GetAs3Config().ClusterName)).Exists(); ok {
-	//	for _, as3Rule := range as3RulesList {
-	//		policyRuleList := gjson.Get(adc, fmt.Sprintf("Common.Shared.%s_system_global_policy.rules", as3.GetAs3Config().ClusterName)).Array()
-	//		//find index the value of item.Path
-	//		index := -1
-	//		for i, rule := range policyRuleList {
-	//			if rule.Get("use").String() == as3Rule.Path {
-	//				index = i
-	//				break
-	//			}
-	//		}
-	//		policyItem := as3.PatchItem{
-	//			Path: fmt.Sprintf("/Common/Shared/%s_system_global_policy/rules/-", as3.GetAs3Config().ClusterName),
-	//			Value: as3.Use{
-	//				Use: as3Rule.Path,
-	//			},
-	//		}
-	//		//if isDelete is true( if exist: remove );
-	//		if isDelete {
-	//			if index > -1 {
-	//				policyItem.Op = as3.OpRemove
-	//				policyItem.Path = fmt.Sprintf("/Common/Shared/%s_system_global_policy/rules/%d", as3.GetAs3Config().ClusterName, index)
-	//				patchBody = append(patchBody, policyItem)
-	//			}
-	//		} else {
-	//			//don,t exist: add
-	//			if index == -1 {
-	//				policyItem.Op = as3.OpAdd
-	//				patchBody = append(patchBody, policyItem)
-	//			}
-	//		}
-	//	}
-	//} else {
-	//	policy := as3.FirewallPolicy{
-	//		Class: as3.ClassFirewallPolicy,
-	//		Rules: []as3.Use{},
-	//	}
-	//	for _, as3Rule := range as3RulesList {
-	//		policy.Rules = append(policy.Rules, as3.Use{Use: as3Rule.Path})
-	//	}
-	//	policyItem := as3.PatchItem{
-	//		Path:  fmt.Sprintf("/Common/Shared/%s_system_global_policy", as3.GetAs3Config().ClusterName),
-	//		Op:    as3.OpAdd,
-	//		Value: policy,
-	//	}
-	//	patchBody = append(patchBody, policyItem)
-	//
-	//}
-
-	err = c.as3Client.Patch(patchBody...)
+	tntcfg := as3.GetTenantConfigForParttition(as3.DefaultPartition)
+	err = c.as3Client.As3Request(nil, nil, &clusterEgressruleList, &externalServicesList, nil, nil,
+		tntcfg, as3.RuleTypeGlobal, isDelete)
 	if err != nil {
-		err = fmt.Errorf("failed to request AS3 Patch API: %v", err)
 		klog.Error(err)
 		return err
-	}
-
-	//get route domian police
-	url := "/mgmt/tm/security/firewall/global-rules"
-	response, err := c.as3Client.GetF5Resource(url)
-	if err != nil {
-		return err
-	}
-
-	isExist := false
-	if val, ok := response[as3.EnforcedPolicyKey]; ok {
-		fwEnforcedPolicy := val.(string)
-		if fwEnforcedPolicy == globalPolicyPath {
-			isExist = true
-		}
-	}
-
-	// created global policy
-	if !isExist {
-		globalPolicy := map[string]string{
-			as3.EnforcedPolicyKey: globalPolicyPath,
-		}
-		err := c.as3Client.PatchF5Reource(globalPolicy, url)
-		if err != nil {
-			return err
-		}
-
-		err = c.as3Client.StoreDisk()
-		if err !=nil {
-			return err
-		}
 	}
 
 	if !isDelete {

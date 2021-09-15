@@ -16,62 +16,6 @@ limitations under the License.
 
 package as3
 
-const (
-	// patch operations
-	OpAdd     = "add"
-	OpRemove  = "remove"
-	OpReplace = "replace"
-)
-
-const (
-	//ADC class
-	ClassApplication = "Application"
-	ClassTenant      = "Tenant"
-
-	// AS3 classes
-	ClassFirewallAddressList = "Firewall_Address_List"
-	ClassFirewallPortList    = "Firewall_Port_List"
-	ClassFirewallRuleList    = "Firewall_Rule_List"
-	ClassFirewallPolicy      = "Firewall_Policy"
-	ClassVirtualServerL4     = "Service_L4"
-	ClassPoll                = "Pool"
-)
-
-const (
-	ClassKey                  = "class"
-	TemplateKey               = "template"
-	SharedKey                 = "Shared"
-	CommonKey                 = "Common"
-	DeclarationKey            = "declaration"
-	EnforcedPolicyKey         = "enforcedPolicy"
-	FwEnforcedPolicyKey       = "fwEnforcedPolicy"
-	DefaultRouteDomainKey     = "defaultRouteDomain"
-	PolicyFirewallEnforcedKey = "policyFirewallEnforced"
-
-	SharedValue = "shared"
-	TenantValue = "Tenant"
-)
-
-const (
-	RuleTypeLabel = "cpaas.io/ruleType"
-
-	RuleTypeGlobal    = "global"
-	RuleTypeNamespace = "namespace"
-	RuleTypeService   = "service"
-)
-
-const (
-	DenyAllRuleListName = "_svc_deny_all_rule_list"
-	DenyAllRuleName     = "deny_all_rule"
-)
-
-const (
-	ClusterSvcExtNamespace = "kube-system"
-)
-
-//eg: Common/Shared/k8s
-const pathProfix = "/%s/Shared/%s"
-
 // PatchItem represents a JSON patch item
 type PatchItem struct {
 	Op    string      `json:"op,omitempty"`
@@ -164,18 +108,20 @@ type VirtualServer struct {
 }
 
 type As3Config struct {
-	Base                 string         `json:"base"`
+	SchemaVersion        string         `json:"schemaVersion"`
 	ClusterName          string         `json:"clusterName"`
+	MasterCluster        string         `json:"master_cluster"`
 	IsSupportRouteDomain bool           `json:"isSupportRouteDomain"`
-	Namespaces           []As3Namespace `json:"namespaces"`
+	Tenant               []TenantConfig `json:"tenant"`
+	LogPool              LogPool        `json:"logPool"`
 }
 
-type As3Namespace struct {
+type TenantConfig struct {
 	Name           string         `json:"name"`
-	Parttion       string         `json:"parttion"`
+	Namespaces     string         `json:"namespaces"`
 	RouteDomain    RouteDomain    `json:"routeDomain"`
-	VirtualService VirtualService `json:"virtualService"`
 	Gwpool         Gwpool         `json:"gwPool"`
+	VirtualService VirtualService `json:"virtualService"`
 }
 
 type RouteDomain struct {
@@ -194,10 +140,63 @@ type Gwpool struct {
 	ServerAddresses []string `json:"serverAddresses"`
 }
 
+type LogPool struct {
+	EnableRemoteLog bool     `json:"enableRemoteLog"`
+	Template        string   `json:"template"`
+	ServerAddresses []string `json:"serverAddresses"`
+}
+
 type BigIpAddressList struct {
 	Addresses []BigIpAddresses `json:"addresses"`
 }
 
 type BigIpAddresses struct {
 	Name string `json:"name"`
+}
+
+//Full body request struct
+type (
+	as3JSONWithArbKeys map[string]interface{}
+
+	as3 as3JSONWithArbKeys
+
+	as3ADC as3JSONWithArbKeys
+
+	as3Tenant as3JSONWithArbKeys
+
+	as3Application as3JSONWithArbKeys
+
+	as3Declaration string
+
+	poolName   string
+	appName    string
+	tenantName string
+	tenant     map[appName][]poolName
+)
+
+type (
+	protocol map[string][]string
+
+	exsvcDate struct {
+		name        string
+		destPorts   protocol
+		destAddress []string
+	}
+	ruleData struct {
+		ty        string
+		name      string
+		namespace string
+		action    string
+		srcAddr   []string
+		//ep name
+		epName string
+		exsvcs []*exsvcDate
+	}
+)
+
+type changingRule struct {
+	partition string
+	exist     bool
+	patchBody PatchBody
+	value     interface{}
 }

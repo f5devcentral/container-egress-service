@@ -6,12 +6,10 @@ BIGIP_USERNAME=${BIGIP_USERNAME:-}     # BigIP username
 BIGIP_PASSWORD=${BIGIP_PASSWORD:-}     # BigIP password
 BIGIP_INSECURE=${BIGIP_INSECURE:-true} # ignore Big-IP TLS error
 
-GATEWAY=${GATEWAY:-} # gateway address
 
 BIGIP_URL="192.168.50.75"
 BIGIP_USERNAME="admin"
 BIGIP_PASSWORD="nihao666"
-GATEWAY="192.168.1.1"
 
 K8S_NAMESPACE=${K8S_NAMESPACE:-kube-system} # namespace in which the controller will be deployed
 

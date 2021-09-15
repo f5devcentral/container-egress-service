@@ -63,7 +63,7 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		return nil
 	}
 
-	nsConfig := as3.GetConfigNamespace(namespace)
+	nsConfig := as3.GetTenantConfigForNamespace(namespace)
 	if nsConfig == nil {
 		klog.Infof("namespace[%s] not in watch range ", namespace)
 		return nil
@@ -71,12 +71,6 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 
 	klog.Infof("===============================>start sync serviceEgressRule[%s/%s]", namespace, name)
 	defer klog.Infof("===============================>end sync serviceEgressRule[%s/%s]", namespace, name)
-
-	//tenant := nsConfig.Parttion
-	//pathProfix := as3.AS3PathPrefix(nsConfig)
-	//gw_pool.ServerAddresses
-	//serverAddresses := nsConfig.Gwpool.ServerAddresses
-	//routeDomain := nsConfig.RouteDomain
 
 	var isDelete bool
 	var r *kubeovn.ServiceEgressRule
@@ -103,207 +97,55 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		}
 	}()
 
-	exsvcs := make([]kubeovn.ExternalService, len(rule.Spec.ExternalServices))
-	for i, svcName := range rule.Spec.ExternalServices {
-		exsvcs[i] = kubeovn.ExternalService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      svcName,
-				Namespace: rule.Namespace,
-			},
-		}
-	}
-
-	eg := egress{
-		name:rule.Name,
-		namespace: rule.Namespace,
-		exsvcs: exsvcs,
-		action: rule.Spec.Action,
-		ruleType: as3.RuleTypeService,
-		k8sSvc: rule.Spec.Service,
-		isDelete: isDelete,
-	}
-
-	_, patchBody, err := c.pkgEgress(eg, nsConfig)
-	if err != nil{
+	ep, err := c.endpointsLister.Endpoints(namespace).Get(rule.Spec.Service)
+	if err != nil {
+		klog.Errorf("failed to get endpoint [%s/%s],due to: %v", namespace, rule.Spec.Service, err)
 		return err
 	}
 
-	//svcRouteDomainPolicePath := fmt.Sprintf("%s_svc_policy_%s", pathProfix, routeDomain.Name)
-	//if !as3.GetAs3Config().IsSupportRouteDomain {
-	//	//because only one svc police
-	//	svcRouteDomainPolicePath = fmt.Sprintf("/Common/Shared/%s_svc_policy_rd", as3.GetAs3Config().ClusterName)
-	//}
-	//// get AS3 declaration
-	//isExistTenant := true
-	//adc, err := c.as3Client.Get(tenant)
-	//if err != nil {
-	//	if as3.IsNotFound(err) {
-	//		isExistTenant = false
-	//	} else {
-	//		return fmt.Errorf("failed to get AS3: %v", err)
-	//	}
-	//}
-	//
-	////add tenant
-	//if !isExistTenant {
-	//	policy := as3.FirewallPolicy{
-	//		Class: as3.ClassFirewallPolicy,
-	//		Rules: []as3.Use{},
-	//	}
-	//	for _, as3Rule := range as3RulesList {
-	//		policy.Rules = append(policy.Rules, as3.Use{Use: as3Rule.Path})
-	//	}
-	//	policyItem := as3.PatchItem{
-	//		Path:  svcRouteDomainPolicePath,
-	//		Op:    as3.OpAdd,
-	//		Value: policy,
-	//	}
-	//	patchBody = append(patchBody, policyItem)
-	//	as3Tenant, err := as3.NewAs3Tenant(nsConfig, patchBody)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	as3Tenant["defaultRouteDomain"] = routeDomain.Id
-	//	tenantItem := as3.PatchItem{
-	//		Op:    as3.OpAdd,
-	//		Path:  "/" + tenant,
-	//		Value: as3Tenant,
-	//	}
-	//
-	//	//search route domian
-	//	url := fmt.Sprintf("/mgmt/tm/net/route-domain/~%s~%s", tenant, routeDomain.Name)
-	//	_, err = c.as3Client.GetF5Resource(url)
-	//	if err != nil {
-	//		klog.Errorf("failed to get route domian %s, error:%v", routeDomain.Name, err)
-	//		return err
-	//	}
-	//
-	//	err = c.as3Client.Patch(tenantItem)
-	//	if err != nil {
-	//		err = fmt.Errorf("failed to request AS3 Patch API: %v", err)
-	//		klog.Error(err)
-	//		return err
-	//	}
-	//	klog.Infof("as3 add %s tenant success", tenant)
-	//	c.recorder.Event(rule, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
-	//	return nil
-	//}
-	//
-	////Determine to update the rules in all patch bodies
-	//patchBody = as3.JudgeSelectedUpdate(adc, patchBody, isDelete)
-	//// find svc polices, if exists: svc policy have created
-	//jsonPath := strings.ReplaceAll(svcRouteDomainPolicePath, "/", ".")[1:]
-	//if ok := gjson.Get(adc, jsonPath).Exists(); ok {
-	//	for _, as3Rule := range as3RulesList {
-	//		policyRuleList := gjson.Get(adc, fmt.Sprintf("%s.rules", jsonPath)).Array()
-	//		//find index the value of item.Path
-	//		index := -1
-	//		for i, rule := range policyRuleList {
-	//			if rule.Get("use").String() == as3Rule.Path {
-	//				index = i
-	//				break
-	//			}
-	//		}
-	//		policyItem := as3.PatchItem{
-	//			Path: fmt.Sprintf("%s/rules/-", svcRouteDomainPolicePath),
-	//			Value: as3.Use{
-	//				Use: as3Rule.Path,
-	//			},
-	//		}
-	//		//if isDelete is true( if exist: remove );
-	//		if isDelete {
-	//			if index > -1 {
-	//				policyItem.Op = as3.OpRemove
-	//				policyItem.Path = fmt.Sprintf("%s/rules/%d", svcRouteDomainPolicePath, index)
-	//				patchBody = append(patchBody, policyItem)
-	//			}
-	//		} else {
-	//			//don,t exist: add
-	//			if index == -1 {
-	//				policyItem.Op = as3.OpAdd
-	//				patchBody = append(patchBody, policyItem)
-	//			}
-	//		}
-	//	}
-	//} else {
-	//	policy := as3.FirewallPolicy{
-	//		Class: as3.ClassFirewallPolicy,
-	//		Rules: []as3.Use{
-	//			//default fwr
-	//			{Use: fmt.Sprintf(as3.GetAs3Config().ClusterName + as3.DenyAllRuleListName)},
-	//		},
-	//	}
-	//	for _, as3Rule := range as3RulesList {
-	//		policy.Rules = append(policy.Rules, as3.Use{Use: as3Rule.Path})
-	//	}
-	//
-	//	policyItem := as3.PatchItem{
-	//		Path:  svcRouteDomainPolicePath,
-	//		Op:    as3.OpAdd,
-	//		Value: policy,
-	//	}
-	//	patchBody = append(patchBody, policyItem)
-	//}
+	serviceEgressruleList := kubeovn.ServiceEgressRuleList{
+		Items: []kubeovn.ServiceEgressRule{
+			*rule,
+		},
+	}
+	externalServicesList := kubeovn.ExternalServiceList{}
+	//set source address, ns subnet
 
-	//vs policyFirewallEnforced point svc police
-	//vsPath := fmt.Sprintf("%s_outbound_vs", pathProfix)
-	//if !as3.GetAs3Config().IsSupportRouteDomain {
-	//	//because only one vs
-	//	vsPath = fmt.Sprintf("/Common/Shared/%s_outbound_vs", as3.GetAs3Config().ClusterName)
-	//}
-	//jsonVsPath := strings.ReplaceAll(vsPath, "/", ".")[1:]
-	//result := gjson.Get(adc, jsonVsPath)
-	//if !result.Exists() {
-	//	vs, err := as3.NewVirtualServer(nsConfig)
-	//	if err != nil {
-	//		klog.Errorf("NewVirtualServer failed: %v", err)
-	//		return err
-	//	}
-	//
-	//	patchVsItem := as3.PatchItem{
-	//		Op:    as3.OpAdd,
-	//		Path:  vsPath,
-	//		Value: vs,
-	//	}
-	//
-	//	gwPoll := as3.NewPoll(serverAddresses)
-	//
-	//	patchPollItem := as3.PatchItem{
-	//		Op:    as3.OpAdd,
-	//		Path:  fmt.Sprintf("/%s/Shared/%s", tenant, vs.Pool),
-	//		Value: gwPoll,
-	//	}
-	//	patchBody = append(patchBody, patchPollItem, patchVsItem)
-	//	//patchBody = append(patchBody, )
-	//} else {
-	//	res := result.Map()["policyFirewallEnforced"]
-	//	if res.Exists() {
-	//		if res.Map()["use"].String() != svcRouteDomainPolicePath {
-	//			policeItem := as3.PatchItem{
-	//				Op:   as3.OpReplace,
-	//				Path: fmt.Sprintf("%s_outbound_vs/policyFirewallEnforced", pathProfix),
-	//				Value: as3.Use{
-	//					Use: svcRouteDomainPolicePath,
-	//				},
-	//			}
-	//			patchBody = append(patchBody, policeItem)
-	//		}
-	//	} else {
-	//		policeItem := as3.PatchItem{
-	//			Op:   as3.OpAdd,
-	//			Path: fmt.Sprintf("%s_outbound_vs/policyFirewallEnforced", pathProfix),
-	//			Value: as3.Use{
-	//				Use: svcRouteDomainPolicePath,
-	//			},
-	//		}
-	//		patchBody = append(patchBody, policeItem)
-	//	}
-	//}
+	endpointsList := corev1.EndpointsList{
+		Items: []corev1.Endpoints{
+			*ep,
+		},
+	}
+	for _, exsvcName := range rule.Spec.ExternalServices {
+		exsvc, err := c.externalServicesLister.ExternalServices(rule.Namespace).Get(exsvcName)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+			klog.Warningf("externalService[%s/%s] does not exist", exsvc.Namespace, exsvc.Name)
+			continue
+		}
 
-	err = c.as3Client.Patch(patchBody...)
+		//update ext ruleType namespace
+		if exsvc.Labels == nil {
+			exsvc.Labels = make(map[string]string, 1)
+		}
+
+		if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeService {
+			exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeService
+			_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
+				metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
+		}
+		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
+	}
+
+	tntcfg := as3.GetTenantConfigForNamespace(namespace)
+	err = c.as3Client.As3Request(&serviceEgressruleList, nil, nil, &externalServicesList, &endpointsList, nil,
+		tntcfg, as3.RuleTypeService, isDelete)
 	if err != nil {
-		err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 		klog.Error(err)
 		return err
 	}

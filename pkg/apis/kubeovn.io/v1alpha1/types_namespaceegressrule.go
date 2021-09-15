@@ -16,7 +16,7 @@ type NamespaceEgressRule struct {
 
 // NamespaceEgressRuleSpec is the spec for an NamespaceEgressRule resource
 type NamespaceEgressRuleSpec struct {
-	Action           string   `json:"action"`
+	Action string `json:"action"`
 	//Subnet           string   `json:"subnet"`
 	ExternalServices []string `json:"externalServices"`
 }
