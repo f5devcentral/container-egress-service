@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"k8s.io/klog/v2"
+	"net"
 	"reflect"
 	"strings"
 
@@ -166,9 +167,10 @@ func (ac *as3Post) newRulesDecl(sharedApp as3Application) map[string][]Use {
 			for ptl, ports := range evc.destPorts {
 				as3DestPortAddr := getAs3DestPortAttr(rule.ty, rule.namespace, rule.name, evc.name, ptl)
 				//app add port
-				newFirewallPortsList(as3DestPortAddr, ports, sharedApp)
+				newFirewallPortsList(as3DestPortAddr, ports.ports, sharedApp)
 				//rule list add rule
-				fwrList.Rules = append(fwrList.Rules, newFirewallRule(ptl, rule.namespace, rule.action, evc.name, as3DesAddrAttr,
+				fwrList.Rules = append(fwrList.Rules, newFirewallRule(ptl, rule.namespace, rule.action, evc.name, ports.irule,
+					as3DesAddrAttr,
 					as3DestPortAddr,
 					as3SrcAddrAttr))
 			}
@@ -202,7 +204,7 @@ func newFirewallRuleList() FirewallRuleList {
 	}
 }
 
-func newFirewallRule(protocol, namespace, action, exsvcName, destAddrAttr, destPortAttr, srcAddrAttr string) FirewallRule {
+func newFirewallRule(protocol, namespace, action, exsvcName, irule, destAddrAttr, destPortAttr, srcAddrAttr string) FirewallRule {
 	rule := FirewallRule{
 		Protocol: protocol,
 		Action:   action,
@@ -220,6 +222,11 @@ func newFirewallRule(protocol, namespace, action, exsvcName, destAddrAttr, destP
 			},
 		},
 	}
+	if irule != "" {
+		rule.IRule = &IRule{
+			Bigip: fmt.Sprintf("/Common/%s", irule),
+		}
+	}
 	if srcAddrAttr != "" {
 		rule.Source = FirewallSource(FirewallDestination{
 			AddressLists: []Use{
@@ -233,9 +240,20 @@ func newFirewallRule(protocol, namespace, action, exsvcName, destAddrAttr, destP
 }
 
 func newFirewallAddressList(attr string, addresses []string, shareApp as3Application) {
+	// have domain, set fqdns
+	ips, dns := []string{}, []string{}
+	for _, addr := range addresses {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			dns = append(dns, addr)
+		} else {
+			ips = append(ips, addr)
+		}
+	}
 	shareApp[attr] = FirewallAddressList{
 		Class:     ClassFirewallAddressList,
-		Addresses: addresses,
+		Addresses: ips,
+		Fqdns:     dns,
 	}
 }
 
@@ -549,15 +567,19 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 		destAddress: exsvc.Spec.Addresses,
 	}
 
-	ptlMap := protocol{}
+	ptlMap := make(map[string]portIrule)
 	for _, pt := range exsvc.Spec.Ports {
 		if pt.Port != "" {
 			ptl := strings.ToLower(pt.Protocol)
-			ptlMap[ptl] = append(ptlMap[ptl], strings.Split(pt.Port, ",")...)
+			ports := append(ptlMap[ptl].ports, strings.Split(pt.Port, ",")...)
+			ptlMap[ptl]= portIrule{
+				irule: pt.Bandwidth,
+				ports: ports,
+			}
 		}
 	}
 	if len(ptlMap) == 0 {
-		ptlMap["any"] = nil
+		ptlMap["any"] = portIrule{}
 	}
 	sv.destPorts = ptlMap
 	return sv

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -62,22 +63,12 @@ func NewClient(ip, username, password string, insecure bool) *Client {
 	return client
 }
 
-func (c *Client) post(data interface{}, partitions ...string) error {
+func (c *Client) post(data interface{}, tenants ...string) error {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	url := c.url
-	if string(url[len(url)-1]) != "/" {
-		url = url + "/"
-	}
-	for i, partition := range partitions {
-		if i == len(partitions)-1 {
-			url = fmt.Sprintf("%s%s", url, partition)
-		} else {
-			url = fmt.Sprintf("%s,%s", url, partition)
-		}
-	}
+	url := c.host + "/mgmt/shared/appsvcs/declare/" + strings.Join(tenants, ",")
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(b))
 	if err != nil {
 		klog.Errorf("Failed to create AS3 request: %v", err)

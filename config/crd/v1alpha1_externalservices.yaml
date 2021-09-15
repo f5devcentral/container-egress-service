@@ -46,3 +46,5 @@ spec:
                       port:
                         type: string
                         pattern: "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$"
+                      bandwidth:
+                        type: string

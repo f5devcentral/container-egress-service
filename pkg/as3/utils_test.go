@@ -2486,3 +2486,27 @@ func TestRomteLog(t *testing.T) {
 	post.newLogPoolDecl(app)
 	printObj(app)
 }
+
+func TestNewAddress(t *testing.T) {
+	addresses := []string{
+		"192.168.1.1",
+		"www.baid.com",
+	}
+	app := as3Application{}
+	newFirewallAddressList("k8s_ns_src_addr", addresses, app)
+	printObj(app)
+
+	addresses = []string{
+		"192.168.1.1",
+	}
+	app = as3Application{}
+	newFirewallAddressList("k8s_ns_src_addr", addresses, app)
+	printObj(app)
+
+	addresses = []string{
+		"www.baid.com",
+	}
+	app = as3Application{}
+	newFirewallAddressList("k8s_ns_src_addr", addresses, app)
+	printObj(app)
+}

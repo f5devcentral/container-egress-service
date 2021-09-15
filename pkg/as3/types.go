@@ -29,6 +29,7 @@ type PatchBody []PatchItem
 // FirewallAddressList represents a firewall address list
 type FirewallAddressList struct {
 	Class     string   `json:"class,omitempty"`
+	Fqdns     []string `json:"fqdns,omitempty"`
 	Addresses []string `json:"addresses,omitempty"`
 }
 
@@ -48,10 +49,15 @@ type FirewallRuleList struct {
 type FirewallRule struct {
 	Protocol    string              `json:"protocol,omitempty"`
 	Name        string              `json:"name,omitempty"`
+	IRule       *IRule               `json:"iRule,omitempty"`
 	Destination FirewallDestination `json:"destination,omitempty"`
 
 	Source FirewallSource `json:"source,omitempty"`
 	Action string         `json:"action,omitempty"`
+}
+
+type IRule struct {
+	Bigip string `json:"bigip,omitempty"`
 }
 
 // FirewallRule represents a firewall destination
@@ -175,11 +181,16 @@ type (
 )
 
 type (
-	protocol map[string][]string
+	portIrule struct{
+		irule  string
+		ports []string
+	}
+
+	//protocol map[string]portIrule
 
 	exsvcDate struct {
 		name        string
-		destPorts   protocol
+		destPorts   map[string]portIrule
 		destAddress []string
 	}
 	ruleData struct {

@@ -15,9 +15,10 @@ type ExternalService struct {
 
 // ExternalService is a specification for an ExternalService port
 type ExternalServicePort struct {
-	Name     string `json:"name"`
-	Protocol string `json:"protocol"`
-	Port     string `json:"port"`
+	Name      string `json:"name"`
+	Protocol  string `json:"protocol"`
+	Port      string `json:"port"`
+	Bandwidth string `json:"bandwidth,omitempty"`
 }
 
 // ExternalServiceSpec is the spec for a ExternalService resource
