@@ -14,7 +14,7 @@ BIGIP_PASSWORD="nihao666"
 K8S_NAMESPACE=${K8S_NAMESPACE:-kube-system} # namespace in which the controller will be deployed
 
 echo "[Step 1] Create Secret"
-kubectl -n $K8S_NAMESPACE create secret generic --from-literal "username=$BIGIP_USERNAME" --from-literal "password=$BIGIP_PASSWORD" f5-bigip-creds
+kubectl -n $K8S_NAMESPACE create secret generic --from-literal "username=$BIGIP_USERNAME" --from-literal "password=$BIGIP_PASSWORD" bigip-creds
 echo "-------------------------------"
 echo ""
 
@@ -66,6 +66,8 @@ spec:
                       port:
                         type: string
                         pattern: "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$"
+                      bandwidth:
+                        type: string
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -120,8 +122,6 @@ spec:
               type: object
       subresources:
         status: {}
----
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -242,13 +242,13 @@ cat << EOF | kubectl apply -f -
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: f5-as3-ctlr
+  name: ces-controller
   namespace: $K8S_NAMESPACE
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: f5-as3-ctlr
+  name: ces-controller
 rules:
   - apiGroups:
       - ""
@@ -322,6 +322,95 @@ metadata:
   namespace: $K8S_NAMESPACE
 data:
   initialized: "false"
+  ces-conf.yaml: |-
+    clusterName: k8s
+    isSupportRouteDomain: false
+    ##AS3 basic configuration
+    ##Multi-cluster docking single BIG-IP, controller Common init and remote log
+    masterCluster: k8s
+    schemaVersion: "3.28.0"
+    iRule:
+      - bwc-1mbps-irule
+      - bwc-2mbps-irule
+      - bwc-3mbps-irule
+    logPool:
+      enableRemoteLog: false
+      serverAddresses:
+        - "1.2.3.4"
+      template: '{
+                     "k8s_afm_hsl_log_profile": {
+                         "network": {
+                             "publisher": {
+                                 "use": "/Common/Shared/k8s_firewall_hsl_log_publisher"
+                             },
+                             "storageFormat": {
+                                 "fields": [
+                                     "bigip-hostname",
+                                     "acl-rule-name",
+                                     "acl-policy-name",
+                                     "acl-policy-type",
+                                     "protocol",
+                                     "action",
+                                     "drop-reason",
+                                     "context-name",
+                                     "context-type",
+                                     "date-time",
+                                     "src-ip",
+                                     "src-port",
+                                     "vlan",
+                                     "route-domain",
+                                     "dest-ip",
+                                     "dest-port"
+                                 ]
+                             },
+                             "logRuleMatchAccepts": true,
+                             "logRuleMatchRejects": true,
+                             "logRuleMatchDrops": true,
+                             "logIpErrors": true,
+                             "logTcpErrors": true,
+                             "logTcpEvents": true
+                         },
+                         "class": "Security_Log_Profile"
+                     },
+                     "k8s_firewall_hsl_log_publisher": {
+                         "destinations": [
+                             {
+                                 "use": "/Common/Shared/k8s_remote-hsl-dest"
+                             },
+                             {
+                                 "use": "/Common/Shared/k8s_remote-hsl-dest-format"
+                             },
+                             {
+                                 "bigip": "/Common/local-db"
+                             }
+                         ],
+                         "class": "Log_Publisher"
+                     },
+                     "k8s_remote-hsl-dest": {
+                         "pool": {
+                             "use": "/Common/Shared/k8s_log_pool"
+                         },
+                         "class": "Log_Destination",
+                         "type": "remote-high-speed-log"
+                     },
+                     "k8s_remote-hsl-dest-format": {
+                         "format": "rfc5424",
+                         "remoteHighSpeedLog": {
+                             "use": "/Common/Shared/k8s_remote-hsl-dest"
+                         },
+                         "class": "Log_Destination",
+                         "type": "remote-syslog"
+                     }
+                 }'
+    tenant:
+      ##common partiton config, init AS3 needs
+      - name: "Common"
+        namespaces: ""
+        virtualService:
+          template: ''
+        gwPool:
+          serverAddresses:
+            - "192.168.10.1"
 EOF
 echo "-------------------------------"
 echo ""
@@ -349,19 +438,25 @@ spec:
           image: kubeovn/ces-controller:0.1.0
           imagePullPolicy: IfNotPresent
           command:
-            - /f5-as3-ctlr
+            - /ces-controller
             - --bigip-url=$BIGIP_URL
             - --bigip-insecure=$BIGIP_INSECURE
-            - --bigip-creds-dir=/bigip-creds
-            - --gateway=$GATEWAY
+            - --bigip-creds-dir=/ces/bigip-creds
+            - --bigip-conf-dir=/ces
           volumeMounts:
             - name: bigip-creds
-              mountPath: "/bigip-creds"
+              mountPath: "/ces/bigip-creds"
+              readOnly: true
+            - name: bigip-config
+              mountPath: /ces
               readOnly: true
       volumes:
         - name: bigip-creds
           secret:
             secretName: bigip-creds
+        - name: bigip-config
+          configMap:
+            name: ces-controller-configmap
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
@@ -370,4 +465,5 @@ echo "-------------------------------"
 echo ""
 
 echo "[Step 5] Wait CES Controller to Be Ready"
+sleep 1s
 kubectl -n $K8S_NAMESPACE wait pod --for=condition=Ready -l app=ces-controller

@@ -13,6 +13,7 @@ const (
 	namespaceCacheKey       = "__NAMESPACE_CACHE_KEY__"
 	partitionCacheKey       = "__PARTITION_CACHE_KEY__"
 	masterClusterKey        = "__MASTER_CLUSTER__"
+	as3IRulesListKey        = "__AS3_IRULES_LIST_KEY__"
 )
 
 func registValue(name, v interface{}) {

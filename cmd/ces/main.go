@@ -55,7 +55,7 @@ var (
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
-	flag.Usage()
+	//flag.Usage()
 
 	if bigipCredsDir != "" {
 		usernameFile := filepath.Join(bigipCredsDir, "username")
@@ -102,7 +102,7 @@ func main() {
 
 	ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
-		ns = []byte("default")
+		ns = []byte("kube-system")
 		//klog.Fatalf("Error reading /var/run/secrets/kubernetes.io/serviceaccount/namespace: %v", err)
 	}
 

@@ -132,6 +132,10 @@ func (c *Client) Get(partition string) (string, error) {
 		return "", err
 	}
 
+	//Common tenant isn't exist, body is ""
+	if err == nil && resp.StatusCode > 199 && resp.StatusCode <299 && string(respBody) == ""{
+		return "", nil
+	}
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
@@ -184,16 +188,7 @@ func (c *Client) PostRaw(data []byte) error {
 	return handleResponse(resp.StatusCode, response)
 }
 
-func (c *Client) Post(data interface{}) error {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	return c.PostRaw(b)
-}
-
-func (c *Client) Patch(patchItems ...PatchItem) error {
+func (c *Client) patch(patchItems ...PatchItem) error {
 	if len(patchItems) == 0 {
 		klog.Info("no data need to patch")
 		return nil
@@ -259,7 +254,7 @@ func handleResponse(statusCode int, response map[string]interface{}) error {
 	return fmt.Errorf("AS3 responds with status code %d - %s", statusCode, http.StatusText(statusCode))
 }
 
-func (c *Client) PatchF5Reource(obj interface{}, url string) error {
+func (c *Client) patchF5Reource(obj interface{}, url string) error {
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -306,7 +301,7 @@ func (c *Client) PatchF5Reource(obj interface{}, url string) error {
 	return nil
 }
 
-func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err error) {
+func (c *Client) getF5Resource(url string) (response map[string]interface{}, err error) {
 	req, err := http.NewRequest(http.MethodGet, c.host+url, nil)
 	if err != nil {
 		klog.Errorf("Failed to get BIG-IP resource request: %v", err)
@@ -342,7 +337,7 @@ func (c *Client) GetF5Resource(url string) (response map[string]interface{}, err
 	return
 }
 
-func (c *Client) PostF5Resouce(obj interface{}, url string) error {
+func (c *Client) postF5Resouce(obj interface{}, url string) error {
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -389,7 +384,7 @@ func (c *Client) PostF5Resouce(obj interface{}, url string) error {
 	return nil
 }
 
-func (c *Client) StoreDisk() error {
+func (c *Client) storeDisk() error {
 	obj := struct {
 		Commond string `json:"command"`
 	}{

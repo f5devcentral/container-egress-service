@@ -3,12 +3,12 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/as3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -76,7 +76,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		if rule.Status.Phase != kubeovn.ClusterEgressRuleSyncing {
 			rule.Status.Phase = kubeovn.ClusterEgressRuleSyncing
 			rule, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule,
-				v1.UpdateOptions{})
+				metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
@@ -109,13 +109,23 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		if exsvc.Labels == nil {
 			exsvc.Labels = make(map[string]string, 1)
 		}
-
-		if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeGlobal {
-			exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeGlobal
+		//delete ruleType
+		if isDelete{
+			labels := exsvc.Labels
+			delete(labels, as3.RuleTypeLabel)
 			_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
 				metav1.UpdateOptions{})
 			if err != nil {
 				return err
+			}
+		}else{
+			if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeGlobal {
+				exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeGlobal
+				_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
+					metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
 			}
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
@@ -131,7 +141,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 
 	if !isDelete {
 		rule.Status.Phase = kubeovn.ClusterEgressRuleSuccess
-		_, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule, v1.UpdateOptions{})
+		_, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

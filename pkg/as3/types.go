@@ -49,7 +49,7 @@ type FirewallRuleList struct {
 type FirewallRule struct {
 	Protocol    string              `json:"protocol,omitempty"`
 	Name        string              `json:"name,omitempty"`
-	IRule       *IRule               `json:"iRule,omitempty"`
+	IRule       *IRule              `json:"iRule,omitempty"`
 	Destination FirewallDestination `json:"destination,omitempty"`
 
 	Source FirewallSource `json:"source,omitempty"`
@@ -113,52 +113,59 @@ type VirtualServer struct {
 	Pool                   string   `json:"pool"`
 }
 
-type As3Config struct {
-	SchemaVersion        string         `json:"schemaVersion"`
-	ClusterName          string         `json:"clusterName"`
-	MasterCluster        string         `json:"master_cluster"`
-	IsSupportRouteDomain bool           `json:"isSupportRouteDomain"`
-	Tenant               []TenantConfig `json:"tenant"`
-	LogPool              LogPool        `json:"logPool"`
-}
+//viper
+type (
+	As3Config struct {
+		SchemaVersion        string         `mapstructure:"schemaVersion"`
+		ClusterName          string         `mapstructure:"clusterName"`
+		MasterCluster        string         `mapstructure:"master_cluster"`
+		IsSupportRouteDomain bool           `mapstructure:"isSupportRouteDomain"`
+		IRule                []string       `mapstructure:"iRule"`
+		Tenant               []TenantConfig `mapstructure:"tenant"`
+		LogPool              LogPool        `mapstructure:"logPool"`
+	}
 
-type TenantConfig struct {
-	Name           string         `json:"name"`
-	Namespaces     string         `json:"namespaces"`
-	RouteDomain    RouteDomain    `json:"routeDomain"`
-	Gwpool         Gwpool         `json:"gwPool"`
-	VirtualService VirtualService `json:"virtualService"`
-}
+	LogPool struct {
+		EnableRemoteLog bool     `mapstructure:"enableRemoteLog"`
+		Template        string   `mapstructure:"template"`
+		ServerAddresses []string `mapstructure:"serverAddresses"`
+	}
 
-type RouteDomain struct {
-	Id               int    `json:"id,omitempty"`
-	Name             string `json:"name,omitempty"`
-	Partition        string `json:"partition,omitempty"`
-	FwEnforcedPolicy string `json:"fwEnforcedPolicy,omitempty"`
-}
+	TenantConfig struct {
+		Name           string         `mapstructure:"name"`
+		Namespaces     string         `mapstructure:"namespaces"`
+		RouteDomain    RouteDomain    `mapstructure:"routeDomain"`
+		Gwpool         Gwpool         `mapstructure:"gwPool"`
+		VirtualService VirtualService `mapstructure:"virtualService"`
+	}
 
-type VirtualService struct {
-	//Custom vs structure，if "", use Common vs value
-	Template string `json:"template"`
-}
+	RouteDomain struct {
+		Id               int    `mapstructure:"id,omitempty"`
+		Name             string `mapstructure:"name,omitempty"`
+		Partition        string `mapstructure:"partition,omitempty"`
+		FwEnforcedPolicy string `mapstructure:"fwEnforcedPolicy,omitempty"`
+	}
 
-type Gwpool struct {
-	ServerAddresses []string `json:"serverAddresses"`
-}
+	Gwpool struct {
+		ServerAddresses []string `mapstructure:"serverAddresses"`
+	}
 
-type LogPool struct {
-	EnableRemoteLog bool     `json:"enableRemoteLog"`
-	Template        string   `json:"template"`
-	ServerAddresses []string `json:"serverAddresses"`
-}
+	VirtualService struct {
+		//Custom vs structure，if "", use Common vs value
+		Template string `mapstructure:"template"`
+	}
+)
 
-type BigIpAddressList struct {
-	Addresses []BigIpAddresses `json:"addresses"`
-}
 
-type BigIpAddresses struct {
-	Name string `json:"name"`
-}
+//BIG-IP
+type(
+	BigIpAddressList struct {
+		Addresses []BigIpAddresses `json:"addresses"`
+	}
+	BigIpAddresses struct {
+		Name string `json:"name"`
+	}
+)
 
 //Full body request struct
 type (
@@ -173,16 +180,11 @@ type (
 	as3Application as3JSONWithArbKeys
 
 	as3Declaration string
-
-	poolName   string
-	appName    string
-	tenantName string
-	tenant     map[appName][]poolName
 )
 
 type (
-	portIrule struct{
-		irule  string
+	portIrule struct {
+		irule string
 		ports []string
 	}
 

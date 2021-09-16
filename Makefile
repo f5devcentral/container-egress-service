@@ -13,7 +13,7 @@ ARCH = amd64
 .PHONY: build-go
 build-go:
 	go mod tidy
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(CURDIR)/dist/$(NAME) -ldflags $(GOLDFLAGS) -v ./cmd/$(NAME)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(CURDIR)/dist/$(NAME) -ldflags $(GOLDFLAGS) -v ./cmd/ces
 
 .PHONY: build-bin
 build-bin:

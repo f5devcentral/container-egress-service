@@ -16,8 +16,10 @@ echo "-------------------------------"
 echo ""
 
 echo "[Step 3] Delete CRD"
-kubectl delete --ignore-not-found crd f5firewallrules.kubeovn.io
 kubectl delete --ignore-not-found crd externalservices.kubeovn.io
+kubectl delete --ignore-not-found crd clusteregressrules.kubeovn.io
+kubectl delete --ignore-not-found crd namespaceegressrules.kubeovn.io
+kubectl delete --ignore-not-found crd serviceegressrules.kubeovn.io
 echo "-------------------------------"
 echo ""
 
@@ -27,6 +29,6 @@ echo "-------------------------------"
 echo ""
 
 echo "[Step 5] Delete ConfigMap"
-kubectl -n $K8S_NAMESPACE delete --ignore-not-found ces-controller-configmap
+kubectl -n $K8S_NAMESPACE delete --ignore-not-found cm ces-controller-configmap
 echo "-------------------------------"
 echo ""

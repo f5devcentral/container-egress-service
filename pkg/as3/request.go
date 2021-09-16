@@ -2,11 +2,12 @@ package as3
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
-	"sync"
-	"time"
 )
 
 func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, namespaceEgressList *v1alpha1.NamespaceEgressRuleList,
@@ -38,7 +39,7 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 		//get route domian police
 		globalPolicyPath := getAs3UsePathForPartition(partition, getAs3PolicyAttr(RuleTypeGlobal, tenantConfig.RouteDomain.Name))
 		url := "/mgmt/tm/security/firewall/global-rules"
-		response, err := c.GetF5Resource(url)
+		response, err := c.getF5Resource(url)
 		if err != nil {
 			return err
 		}
@@ -54,12 +55,12 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 			globalPolicy := map[string]string{
 				EnforcedPolicyKey: globalPolicyPath,
 			}
-			err := c.PatchF5Reource(globalPolicy, url)
+			err := c.patchF5Reource(globalPolicy, url)
 			if err != nil {
 				return err
 			}
 
-			err = c.StoreDisk()
+			err = c.storeDisk()
 			if err != nil {
 				return err
 			}
@@ -69,7 +70,7 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 		nsRouteDomainPolicePath := getAs3UsePathForPartition(partition, getAs3PolicyAttr("ns", tenantConfig.RouteDomain.Name))
 		//get route domian police
 		url := fmt.Sprintf("/mgmt/tm/net/route-domain/~%s~%s", tenantConfig.Name, tenantConfig.RouteDomain.Name)
-		response, err := c.GetF5Resource(url)
+		response, err := c.getF5Resource(url)
 		if err != nil {
 			klog.Errorf("failed to get route domian %s, error:%v", tenantConfig.RouteDomain.Name, err)
 			return err
@@ -87,12 +88,12 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 			rd := RouteDomain{
 				FwEnforcedPolicy: nsRouteDomainPolicePath,
 			}
-			err := c.PatchF5Reource(rd, url)
+			err := c.patchF5Reource(rd, url)
 			if err != nil {
 				return err
 			}
 
-			err = c.StoreDisk()
+			err = c.storeDisk()
 			if err != nil {
 				return err
 			}
@@ -109,7 +110,7 @@ func (c *Client) UpdateBigIPSourceAddress(addrList BigIpAddressList, tntcfg *Ten
 			addrList.Addresses[k].Name = addrList.Addresses[k].Name + "%10"
 		}
 	}
-	err := c.PatchF5Reource(addrList, url)
+	err := c.patchF5Reource(addrList, url)
 	if err != nil {
 		err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 		return err
@@ -143,7 +144,7 @@ func (c *Client) frequency() {
 		return false
 	}
 	if len(syncFq.updateTimes) > 10 || isUpdateEpFq() {
-		err := c.StoreDisk()
+		err := c.storeDisk()
 		if err != nil {
 			klog.Errorf("BIG-IP store disk error: %v", err)
 			return

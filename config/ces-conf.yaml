@@ -4,6 +4,50 @@ isSupportRouteDomain: false
 ##Multi-cluster docking single BIG-IP, controller Common init and remote log
 masterCluster: k8s
 schemaVersion: "3.28.0"
+iRule:
+  - bwc-1mbps-irule
+  - bwc-2mbps-irule
+  - bwc-3mbps-irule
+tenant:
+  ##common partiton config, init AS3 needs
+  - name: "Common"
+    namespaces: "default"
+    virtualService:
+      template: ''
+    gwPool:
+      serverAddresses:
+        - "192.168.10.1"
+  - name: project2
+    namespaces: project2
+    routeDomain:
+      id: 2
+      name: "rd2"
+    virtualService:
+      template: ""
+    gwPool:
+      serverAddresses:
+        - "1.16.10.22"
+        - "192.168.10.22"
+  - name: project3
+    namespaces: project3
+    routeDomain:
+      id: 3
+      name: "rd3"
+    virtualService:
+      template: ""
+    gwPool:
+      serverAddresses:
+        - "10.16.10.23"
+  - name: test-ns-a
+    namespaces: test-ns-a
+    routeDomain:
+      id: 4
+      name: "rd4"
+    virtualService:
+      template: ""
+    gwPool:
+      serverAddresses:
+        - "10.16.10.24"
 logPool:
   enableRemoteLog: false
   serverAddresses:
@@ -73,45 +117,6 @@ logPool:
                      "type": "remote-syslog"
                  }
              }'
-tenant:
-  ##common partiton config, init AS3 needs
-  - name: "Common"
-    namespaces: "default"
-    virtualService:
-      template: ''
-    gwPool:
-      serverAddresses:
-        - "192.168.10.1"
-  - name: project2
-    namespaces: project2
-    routeDomain:
-      id: 2
-      name: "rd2"
-    virtualService:
-      template: ""
-    gwPool:
-      serverAddresses:
-        - "1.16.10.22"
-        - "192.168.10.22"
-  - name: project3
-    namespaces: project3
-    routeDomain:
-      id: 3
-      name: "rd3"
-    virtualService:
-      template: ""
-    gwPool:
-      serverAddresses:
-        - "10.16.10.23"
-  - name: test-ns-a
-    namespaces: test-ns-a
-    routeDomain:
-      id: 4
-      name: "rd4"
-    virtualService:
-      template: ""
-    gwPool:
-      serverAddresses:
-        - "10.16.10.24"
+
 
 

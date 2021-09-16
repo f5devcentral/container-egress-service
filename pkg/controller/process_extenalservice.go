@@ -2,6 +2,8 @@ package controller
 
 import (
 	"fmt"
+	"strings"
+
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/as3"
 	corev1 "k8s.io/api/core/v1"
@@ -80,6 +82,11 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 			c.recorder.Event(service, corev1.EventTypeWarning, err.Error(), MessageResourceFailedSynced)
 		}
 	}()
+	//verify bandwidth
+	if !verifyExtenalService(service){
+		err = fmt.Errorf("The bandwidth field is invalid, one of them should be filled in %s", as3.GetIRules())
+		return err
+	}
 	ruleType := es.Labels[as3.RuleTypeLabel]
 	find := false
 	clusterEgressruleList := kubeovn.ClusterEgressRuleList{}
@@ -164,4 +171,19 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 	}
 	c.recorder.Event(es, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
+}
+
+
+func verifyExtenalService(exsvc *kubeovn.ExternalService)bool{
+	ports := exsvc.Spec.Ports
+	iruleStr := as3.GetIRules()
+	for _, port := range ports{
+		bindwidth := port.Bandwidth
+		if strings.TrimSpace(bindwidth) != ""{
+			if !strings.Contains(iruleStr, bindwidth){
+				return false
+			}
+		}
+	}
+	return true
 }

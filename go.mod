@@ -4,11 +4,10 @@ go 1.16
 
 require (
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/tidwall/gjson v1.7.5
+	github.com/spf13/viper v1.8.1
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	k8s.io/api v0.20.6

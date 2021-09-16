@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/as3"
 	corev1 "k8s.io/api/core/v1"
@@ -129,12 +130,23 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 			exsvc.Labels = make(map[string]string, 1)
 		}
 
-		if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeNamespace {
-			exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeNamespace
+		//delete ruleType
+		if isDelete{
+			labels := exsvc.Labels
+			delete(labels, as3.RuleTypeLabel)
 			_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
 				metav1.UpdateOptions{})
 			if err != nil {
 				return err
+			}
+		}else {
+			if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeNamespace {
+				exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeNamespace
+				_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
+					metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
 			}
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
