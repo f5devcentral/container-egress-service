@@ -393,37 +393,41 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 	case *corev1.Endpoints:
 		oldEp := old.(*corev1.Endpoints)
 		newEp := new.(*corev1.Endpoints)
+		if oldEp.Namespace == "kube-system"{
+			return false
+		}
 		nsConfig := as3.GetTenantConfigForNamespace(oldEp.Namespace)
 		if nsConfig == nil {
 			klog.V(5).Infof("namespace[%s] not in watch range ", oldEp.Namespace)
 			return false
 		}
 
-		if oldEp.ResourceVersion == newEp.ResourceVersion {
-			return false
-		}
+		//if oldEp.ResourceVersion == newEp.ResourceVersion {
+		//	return false
+		//}
 
 		if len(oldEp.Subsets) == 0 && len(newEp.Subsets) > 0 {
 			return true
 		}
 
-		for _, oldv := range oldEp.Subsets {
-			for _, newv := range newEp.Subsets {
-				for _, oldAdd := range oldv.Addresses {
-					isFind := false
-					for _, newAdd := range newv.Addresses {
-						if oldAdd.IP == newAdd.IP {
-							isFind = true
-							break
-						}
-					}
-					if !isFind {
-						return true
-					}
-				}
-
-			}
-		}
+		return true
+		//for _, oldv := range oldEp.Subsets {
+		//	for _, newv := range newEp.Subsets {
+		//		for _, oldAdd := range oldv.Addresses {
+		//			isFind := false
+		//			for _, newAdd := range newv.Addresses {
+		//				if oldAdd.IP == newAdd.IP {
+		//					isFind = true
+		//					break
+		//				}
+		//			}
+		//			if !isFind {
+		//				return true
+		//			}
+		//		}
+		//
+		//	}
+		//}
 	}
 	return false
 }

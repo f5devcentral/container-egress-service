@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
-	"k8s.io/klog/v2"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 	//"sigs.k8s.io/yaml"
 )
 
@@ -51,7 +51,7 @@ namespaces:
 	if getMasterCluster() == GetCluster() && !initialized {
 		as3Str, err := client.Get(DefaultPartition)
 		if err != nil {
-			return fmt.Errorf("failed to get partition", err)
+			return fmt.Errorf("failed to get partition, due to: %v", err)
 		}
 		if as3Str == "" {
 			return client.post(initDefaultAS3(), DefaultPartition)
@@ -194,7 +194,7 @@ func getIRules() []string {
 	return irules
 }
 
-func IsNotFound(err error) bool {
+func isNotFound(err error) bool {
 	if strings.Contains(err.Error(), "status code 404") {
 		return true
 	}
@@ -209,7 +209,7 @@ func getSchemaVersion() string {
 	return v.(string)
 }
 
-func skipDeleteShareApplicationClassOrAttr(attr string) bool {
+func skipDeleteShareApplicationClassOrAttr(partition, attr string) bool {
 	skipDeleteShareApplicationAttr := map[string]bool{
 		ClassKey:                 true,
 		TemplateKey:              true,
@@ -218,7 +218,8 @@ func skipDeleteShareApplicationClassOrAttr(attr string) bool {
 		getAllDenyRuleListAttr(): true,
 	}
 	shareApp := as3Application{}
-	ac := &as3Post{}
+	tntcfg := GetTenantConfigForParttition(partition)
+	ac := newAs3Post(nil, nil, nil,nil,nil,nil, tntcfg)
 	ac.newLogPoolDecl(shareApp)
 	for k, _ := range shareApp {
 		skipDeleteShareApplicationAttr[k] = true

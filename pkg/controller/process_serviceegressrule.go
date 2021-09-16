@@ -123,7 +123,7 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 			if !errors.IsNotFound(err) {
 				return err
 			}
-			klog.Warningf("externalService[%s/%s] does not exist", exsvc.Namespace, exsvc.Name)
+			klog.Warningf("externalService[%s/%s] does not exist", rule.Namespace, exsvcName)
 			continue
 		}
 

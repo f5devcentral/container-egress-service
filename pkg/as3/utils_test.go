@@ -2477,6 +2477,16 @@ func TestRomteLog(t *testing.T) {
 	post.newLogPoolDecl(app)
 	printObj(app)
 
+	as3cfg.LogPool.EnableRemoteLog = true
+	as3cfg.IsSupportRouteDomain = true
+	initTenantConfig(as3cfg)
+	post = &as3Post{
+		tenantConfig: &as3cfg.Tenant[1],
+	}
+	app = as3Application{}
+	post.newLogPoolDecl(app)
+	printObj(app)
+
 	as3cfg.LogPool.EnableRemoteLog = false
 	initTenantConfig(as3cfg)
 	post = &as3Post{

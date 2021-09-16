@@ -140,10 +140,9 @@ type (
 	}
 
 	RouteDomain struct {
-		Id               int    `mapstructure:"id,omitempty"`
-		Name             string `mapstructure:"name,omitempty"`
-		Partition        string `mapstructure:"partition,omitempty"`
-		FwEnforcedPolicy string `mapstructure:"fwEnforcedPolicy,omitempty"`
+		Id        int    `mapstructure:"id,omitempty"`
+		Name      string `mapstructure:"name,omitempty"`
+		Partition string `mapstructure:"partition,omitempty"`
 	}
 
 	Gwpool struct {
@@ -152,13 +151,13 @@ type (
 
 	VirtualService struct {
 		//Custom vs structure，if "", use Common vs value
-		Template string `mapstructure:"template"`
+		Template         string   `mapstructure:"template"`
+		VirtualAddresses []string `mapstructure:"virtualAddresses"`
 	}
 )
 
-
 //BIG-IP
-type(
+type (
 	BigIpAddressList struct {
 		Addresses []BigIpAddresses `json:"addresses"`
 	}

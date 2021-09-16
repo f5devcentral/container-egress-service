@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"strings"
 
-	"k8s.io/klog/v2"
 	"github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
 
 //other partition set clusterEgressList is nil
@@ -243,6 +243,11 @@ func newFirewallAddressList(attr string, addresses []string, shareApp as3Applica
 	// have domain, set fqdns
 	ips, dns := []string{}, []string{}
 	for _, addr := range addresses {
+		//ns src addr is cidr
+		if _, _, err := net.ParseCIDR(addr); err == nil {
+			ips = append(ips, addr)
+			continue
+		}
 		ip := net.ParseIP(addr)
 		if ip == nil {
 			dns = append(dns, addr)
@@ -288,26 +293,12 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 	if log.Template == "" {
 		return
 	}
-	template := strings.ReplaceAll(log.Template, "k8s", getMasterCluster())
+	template := strings.ReplaceAll(log.Template, "k8s", GetCluster())
+	template = strings.ReplaceAll(template, "{{tenant}}", ac.tenantConfig.Name)
 	var logpool map[string]interface{}
 	err := validateJSONAndFetchObject(template, &logpool)
 	if err != nil {
 		return
-	}
-
-	if ac.tenantConfig.Name != DefaultPartition {
-		for k, v := range logpool {
-			logpublish, ok := v.(map[string]interface{})
-			if !ok {
-				return
-			}
-			if logpublish[ClassKey] == ClassSecurityLogProfile {
-				//update current cluster name
-				k = strings.ReplaceAll(k, getMasterCluster(), GetCluster())
-				sharedApp[k] = logpublish
-				return
-			}
-		}
 	}
 	if !log.EnableRemoteLog {
 		for k, v := range logpool {
@@ -332,19 +323,19 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 		for k, v := range logpool {
 			sharedApp[k] = v
 		}
-		sharedApp[getMasterCluster()+"_log_pool"] = &Pool{
-			Class: ClassPoll,
-			Members: []Member{
-				Member{
-					ServerAddresses: log.ServerAddresses,
-					ServicePort:     0,
-					Enable:          true,
-				},
+	}
+	sharedApp[GetCluster()+"_log_pool"] = &Pool{
+		Class: ClassPoll,
+		Members: []Member{
+			Member{
+				ServerAddresses: log.ServerAddresses,
+				ServicePort:     0,
+				Enable:          true,
 			},
-			Monitors: []Monitor{
-				Monitor{Bigip: "/Common/gateway_icmp"},
-			},
-		}
+		},
+		Monitors: []Monitor{
+			Monitor{Bigip: "/Common/gateway_icmp"},
+		},
 	}
 }
 
@@ -352,7 +343,9 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 	svcPolicyPath := getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3PolicyAttr("svc", ac.tenantConfig.RouteDomain.Name))
 	if ac.tenantConfig.VirtualService.Template != "" {
-		vsTemplate := ac.tenantConfig.VirtualService.Template
+		vsTemplate := strings.ReplaceAll(ac.tenantConfig.VirtualService.Template, "k8s", GetCluster())
+		vsTemplate = strings.ReplaceAll(vsTemplate, "{{tenant}}", ac.tenantConfig.Name)
+
 		vs := map[string]interface{}{}
 		err := validateJSONAndFetchObject(vsTemplate, &vs)
 		if err != nil {
@@ -365,7 +358,7 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 				PolicyFirewallEnforced: Use{
 					svcPolicyPath,
 				},
-				SecurityLogProfiles: []Use{},
+				SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, "k8s_afm_hsl_log_profile")}},
 				VirtualPort:         0,
 				Snat:                "auto",
 				Class:               ClassVirtualServerL4,
@@ -373,19 +366,26 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 			}
 			return
 		}
-		vs[PolicyFirewallEnforcedKey] = svcPolicyPath
-		vs[PolicyFirewallEnforcedKey] = getAs3GwPoolAttr()
+		vs[PolicyFirewallEnforcedKey] = Use{
+			svcPolicyPath,
+		}
+		vs["pool"] = getAs3GwPoolAttr()
+		sharedApp[getAs3VSAttr()] = vs
 
 	} else {
+		VirtualAddresses := ac.tenantConfig.VirtualService.VirtualAddresses
+		if len(ac.tenantConfig.VirtualService.VirtualAddresses) == 0 {
+			VirtualAddresses = []string{"0.0.0.0"}
+		}
 		sharedApp[getAs3VSAttr()] = &VirtualServer{
 			Layer4:                 "any",
 			TranslateServerAddress: false,
 			TranslateServerPort:    false,
-			VirtualAddresses:       []string{"0.0.0.0"},
+			VirtualAddresses:       VirtualAddresses,
 			PolicyFirewallEnforced: Use{
 				svcPolicyPath,
 			},
-			SecurityLogProfiles: []Use{},
+			SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, "k8s_afm_hsl_log_profile")}},
 			VirtualPort:         0,
 			Snat:                "auto",
 			Class:               ClassVirtualServerL4,
@@ -572,7 +572,7 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 		if pt.Port != "" {
 			ptl := strings.ToLower(pt.Protocol)
 			ports := append(ptlMap[ptl].ports, strings.Split(pt.Port, ",")...)
-			ptlMap[ptl]= portIrule{
+			ptlMap[ptl] = portIrule{
 				irule: pt.Bandwidth,
 				ports: ports,
 			}
@@ -614,7 +614,7 @@ func getAs3SrcAddressAttr(ty, namespace, ruleName, endpointName string) string {
 		return ""
 	}
 	if ty == "ns" {
-		fmt.Sprintf("%s_%s_%s_src_address", GetCluster(), ty_ns, ruleName)
+		return fmt.Sprintf("%s_%s_%s_src_address", GetCluster(), ty_ns, ruleName)
 	}
 	return fmt.Sprintf("%s_%s_%s_ep_%s_src_address", GetCluster(), ty_ns, ruleName, endpointName)
 }
@@ -719,7 +719,7 @@ func patchResouce(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 			}
 			//poll and vs don,t delete, only add or modify
 			if isDelete {
-				if skipDeleteShareApplicationClassOrAttr(deltaKey) {
+				if skipDeleteShareApplicationClassOrAttr(partition, deltaKey) {
 					continue
 				}
 				continue
@@ -839,7 +839,7 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 			//poll and vs don,t delete, only add or modify
 			if isDelete {
 				//filter out app attributes
-				if skipDeleteShareApplicationClassOrAttr(deltaKey) {
+				if skipDeleteShareApplicationClassOrAttr(partition, deltaKey) {
 					continue
 				}
 			}

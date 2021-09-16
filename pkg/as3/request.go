@@ -22,7 +22,11 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 	partition := tenantConfig.Name
 	adcStr, err := c.Get(partition)
 	if err != nil {
-		return fmt.Errorf("failed to get tenant[%s], error: %v", partition, err)
+		if isNotFound(err){
+			adcStr = "{}"
+		}else{
+			return fmt.Errorf("failed to get tenant[%s], error: %v", partition, err)
+		}
 	}
 	srcAdc := map[string]interface{}{}
 	err = validateJSONAndFetchObject(adcStr, &srcAdc)
@@ -85,10 +89,10 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 		}
 		if !isNsPolicyExist {
 			// binding route domain policy
-			rd := RouteDomain{
-				FwEnforcedPolicy: nsRouteDomainPolicePath,
+			nsPolicy := map[string]string{
+				FwEnforcedPolicyKey: nsRouteDomainPolicePath,
 			}
-			err := c.patchF5Reource(rd, url)
+			err := c.patchF5Reource(nsPolicy, url)
 			if err != nil {
 				return err
 			}

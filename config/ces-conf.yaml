@@ -1,9 +1,9 @@
 clusterName: k8s
-isSupportRouteDomain: false
+isSupportRouteDomain: true
 ##AS3 basic configuration
 ##Multi-cluster docking single BIG-IP, controller Common init and remote log
 masterCluster: k8s
-schemaVersion: "3.28.0"
+schemaVersion: "3.29.0"
 iRule:
   - bwc-1mbps-irule
   - bwc-2mbps-irule
@@ -11,9 +11,11 @@ iRule:
 tenant:
   ##common partiton config, init AS3 needs
   - name: "Common"
-    namespaces: "default"
+    namespaces: "default,kube-system"
     virtualService:
       template: ''
+      virtualAddresses:
+        - "0.0.0.0"
     gwPool:
       serverAddresses:
         - "192.168.10.1"
@@ -24,30 +26,41 @@ tenant:
       name: "rd2"
     virtualService:
       template: ""
+      virtualAddresses:
+        - "1.0.0.0"
     gwPool:
       serverAddresses:
         - "1.16.10.22"
         - "192.168.10.22"
   - name: project3
-    namespaces: project3
-    routeDomain:
-      id: 3
-      name: "rd3"
-    virtualService:
-      template: ""
-    gwPool:
-      serverAddresses:
-        - "10.16.10.23"
-  - name: test-ns-a
-    namespaces: test-ns-a
+    namespaces: project3,test-ns-a
     routeDomain:
       id: 4
       name: "rd4"
     virtualService:
-      template: ""
+      template: '{
+                 "layer4": "any",
+                 "translateServerAddress": false,
+                 "translateServerPort": false,
+                 "virtualAddresses": [
+                     "1.1.0.0"
+                 ],
+                 "policyFirewallEnforced": {
+                     "use": "/{{tenant}}/Shared/k8s_svc_policy_rd3"
+                 },
+                 "securityLogProfiles": [
+                     {
+                         "use": "/{{tenant}}/Shared/k8s_afm_hsl_log_profile"
+                     }
+                 ],
+                 "virtualPort": 0,
+                 "snat": "auto",
+                 "class": "Service_L4",
+                 "pool": "k8s_gw_pool"
+             }'
     gwPool:
       serverAddresses:
-        - "10.16.10.24"
+        - "10.16.10.23"
 logPool:
   enableRemoteLog: false
   serverAddresses:
@@ -56,7 +69,7 @@ logPool:
                  "k8s_afm_hsl_log_profile": {
                      "network": {
                          "publisher": {
-                             "use": "/Common/Shared/k8s_firewall_hsl_log_publisher"
+                             "use": "/{{tenant}}/Shared/k8s_firewall_hsl_log_publisher"
                          },
                          "storageFormat": {
                              "fields": [
@@ -90,20 +103,20 @@ logPool:
                  "k8s_firewall_hsl_log_publisher": {
                      "destinations": [
                          {
-                             "use": "/Common/Shared/k8s_remote-hsl-dest"
+                             "use": "/{{tenant}}/Shared/k8s_remote-hsl-dest"
                          },
                          {
-                             "use": "/Common/Shared/k8s_remote-hsl-dest-format"
+                             "use": "/{{tenant}}/Shared/k8s_remote-hsl-dest-format"
                          },
                          {
-                             "bigip": "/Common/local-db"
+                             "bigip": "/{{tenant}}/local-db"
                          }
                      ],
                      "class": "Log_Publisher"
                  },
                  "k8s_remote-hsl-dest": {
                      "pool": {
-                         "use": "/Common/Shared/k8s_log_pool"
+                         "use": "/{{tenant}}/Shared/k8s_log_pool"
                      },
                      "class": "Log_Destination",
                      "type": "remote-high-speed-log"
@@ -111,7 +124,7 @@ logPool:
                  "k8s_remote-hsl-dest-format": {
                      "format": "rfc5424",
                      "remoteHighSpeedLog": {
-                         "use": "/Common/Shared/k8s_remote-hsl-dest"
+                         "use": "/{{tenant}}/Shared/k8s_remote-hsl-dest"
                      },
                      "class": "Log_Destination",
                      "type": "remote-syslog"

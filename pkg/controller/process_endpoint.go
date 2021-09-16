@@ -42,7 +42,6 @@ func (c *Controller) processNextEndpointsWorkItem() bool {
 		}
 
 		c.endpointsWorkqueue.Forget(obj)
-		klog.Infof("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -66,9 +65,6 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 		klog.Infof("namespace[%s] not in watch range ", namespace)
 		return nil
 	}
-
-	klog.Infof("===============================>start sync endpoints[%s/%s]", namespace, name)
-	defer klog.Infof("===============================>end sync endpoints[%s/%s]", namespace, name)
 
 	ep, err := c.endpointsLister.Endpoints(namespace).Get(name)
 	if err != nil {
@@ -114,10 +110,11 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 				klog.Error(err)
 				return err
 			}
+			klog.Infof("===============================>start sync endpoints[%s/%s]", namespace, name)
 			c.as3Client.UpdateBigIPSourceAddress(patchItems, nsConfig, namespace, rule.Name, ep.Name)
+			defer klog.Infof("===============================>end sync endpoints[%s/%s]", namespace, name)
 			break
 		}
 	}
-	c.recorder.Event(endpoints, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }

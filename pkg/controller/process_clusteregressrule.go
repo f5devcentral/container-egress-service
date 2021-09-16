@@ -101,7 +101,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 			if !errors.IsNotFound(err) {
 				return err
 			}
-			klog.Warningf("externalService[%s/%s] does not exist", exsvc.Namespace, exsvc.Name)
+			klog.Warningf("externalService[%s/%s] does not exist", as3.ClusterSvcExtNamespace, exsvcName)
 			continue
 		}
 
