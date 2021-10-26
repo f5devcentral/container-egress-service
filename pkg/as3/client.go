@@ -51,7 +51,6 @@ func NewClient(ip, username, password string, insecure bool) *Client {
 			Timeout: 60 * time.Second,
 		},
 	}
-
 	if insecure {
 		client.Client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -59,7 +58,6 @@ func NewClient(ip, username, password string, insecure bool) *Client {
 			},
 		}
 	}
-
 	return client
 }
 
@@ -74,11 +72,8 @@ func (c *Client) post(data interface{}, tenants ...string) error {
 		klog.Errorf("Failed to create AS3 request: %v", err)
 		return err
 	}
-
 	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
-
 	req.SetBasicAuth(c.username, c.password)
-
 	c.Lock()
 	defer c.Unlock()
 
@@ -94,16 +89,12 @@ func (c *Client) post(data interface{}, tenants ...string) error {
 		klog.Errorf("Failed to read response body: %v", err)
 		return err
 	}
-
-	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
 	klog.Infof("response: body = %s", string(respBody))
-
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return err
 	}
-
 	return handleResponse(resp.StatusCode, response)
 }
 
@@ -113,9 +104,7 @@ func (c *Client) Get(partition string) (string, error) {
 		klog.Errorf("Failed to create AS3 request: %v", err)
 		return "", err
 	}
-
 	req.SetBasicAuth(c.username, c.password)
-
 	c.Lock()
 	defer c.Unlock()
 
@@ -131,7 +120,6 @@ func (c *Client) Get(partition string) (string, error) {
 		klog.Errorf("Failed to read response body: %v", err)
 		return "", err
 	}
-
 	//Common tenant isn't exist, body is ""
 	if err == nil && resp.StatusCode > 199 && resp.StatusCode <299 && string(respBody) == ""{
 		return "", nil
@@ -141,7 +129,6 @@ func (c *Client) Get(partition string) (string, error) {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return "", err
 	}
-
 	if err = handleResponse(resp.StatusCode, response); err != nil {
 		return "", err
 	}
@@ -155,9 +142,7 @@ func (c *Client) PostRaw(data []byte) error {
 		klog.Errorf("Failed to create AS3 request: %v", err)
 		return err
 	}
-
 	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
-
 	req.SetBasicAuth(c.username, c.password)
 
 	c.Lock()
@@ -175,10 +160,7 @@ func (c *Client) PostRaw(data []byte) error {
 		klog.Errorf("Failed to read response body: %v", err)
 		return err
 	}
-
-	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
 	klog.Infof("response: body = %s", string(respBody))
-
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
@@ -197,15 +179,13 @@ func (c *Client) patch(patchItems ...PatchItem) error {
 	if err != nil {
 		return err
 	}
-
 	req, err := http.NewRequest(http.MethodPatch, c.url, bytes.NewBuffer(b))
 	if err != nil {
 		klog.Errorf("Failed to create AS3 request: %v", err)
 		return err
 	}
-
+	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
 	req.SetBasicAuth(c.username, c.password)
-
 	c.Lock()
 	defer c.Unlock()
 
@@ -221,16 +201,12 @@ func (c *Client) patch(patchItems ...PatchItem) error {
 		klog.Errorf("Failed to read response body: %v", err)
 		return err
 	}
-
-	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
 	klog.Infof("response: body = %s", string(respBody))
-
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return err
 	}
-
 	return handleResponse(resp.StatusCode, response)
 }
 
@@ -239,7 +215,6 @@ func handleResponse(statusCode int, response map[string]interface{}) error {
 	case http.StatusOK, http.StatusCreated, http.StatusAccepted:
 		return nil
 	}
-
 	if results, ok := (response["results"]).([]interface{}); ok {
 		for _, value := range results {
 			v := value.(map[string]interface{})
@@ -250,7 +225,6 @@ func handleResponse(statusCode int, response map[string]interface{}) error {
 	} else {
 		klog.Errorf("Big-IP Responded with code: %v", response["code"])
 	}
-
 	return fmt.Errorf("AS3 responds with status code %d - %s", statusCode, http.StatusText(statusCode))
 }
 
@@ -265,11 +239,8 @@ func (c *Client) patchF5Reource(obj interface{}, url string) error {
 		klog.Errorf("Failed to create BIG-IP resouce request: %v", err)
 		return err
 	}
-
 	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
-
 	req.SetBasicAuth(c.username, c.password)
-
 	c.Lock()
 	defer c.Unlock()
 
@@ -285,15 +256,12 @@ func (c *Client) patchF5Reource(obj interface{}, url string) error {
 		klog.Errorf("Failed to read response body: %v", err)
 		return err
 	}
-
 	klog.Infof("response: body = %s", string(respBody))
-
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return err
 	}
-
 	err = handleResponse(resp.StatusCode, response)
 	if err != nil {
 		return err
@@ -307,9 +275,7 @@ func (c *Client) getF5Resource(url string) (response map[string]interface{}, err
 		klog.Errorf("Failed to get BIG-IP resource request: %v", err)
 		return
 	}
-
 	req.SetBasicAuth(c.username, c.password)
-
 	c.Lock()
 	defer c.Unlock()
 
@@ -325,12 +291,10 @@ func (c *Client) getF5Resource(url string) (response map[string]interface{}, err
 		klog.Errorf("Failed to read response body: %v", err)
 		return
 	}
-
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return
 	}
-
 	if err = handleResponse(resp.StatusCode, response); err != nil {
 		return
 	}
@@ -347,11 +311,8 @@ func (c *Client) postF5Resouce(obj interface{}, url string) error {
 		klog.Errorf("Failed to create AS3 request: %v", err)
 		return err
 	}
-
 	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
-
 	req.SetBasicAuth(c.username, c.password)
-
 	c.Lock()
 	defer c.Unlock()
 
@@ -367,16 +328,12 @@ func (c *Client) postF5Resouce(obj interface{}, url string) error {
 		klog.Errorf("Failed to read response body: %v", err)
 		return err
 	}
-
-	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
 	klog.Infof("response: body = %s", string(respBody))
-
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return err
 	}
-
 	err = handleResponse(resp.StatusCode, response)
 	if err != nil {
 		return err
@@ -390,7 +347,6 @@ func (c *Client) storeDisk() error {
 	}{
 		Commond: "save",
 	}
-
 	data, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -401,11 +357,8 @@ func (c *Client) storeDisk() error {
 		klog.Errorf("Failed to create BIG-IP resouce request: %v", err)
 		return err
 	}
-
 	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
-
 	req.SetBasicAuth(c.username, c.password)
-
 	resp, err := c.Do(req)
 	if err != nil {
 		klog.Errorf("Failed to call BIG-IP API: %v", err)
@@ -418,14 +371,11 @@ func (c *Client) storeDisk() error {
 		klog.Errorf("Failed to read response body: %v", err)
 		return err
 	}
-
 	klog.Infof("response: body = %s", string(respBody))
-
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		klog.Errorf("Failed to unmarshal response body: %v", err)
 		return err
 	}
-
 	return handleResponse(resp.StatusCode, response)
 }

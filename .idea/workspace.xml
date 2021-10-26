@@ -3,15 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/ces/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/ces/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/install.sh" beforeDir="false" afterPath="$PROJECT_DIR$/dist/install.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/const.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/const.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/init.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/init.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/register.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/register.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/types.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,6 +57,14 @@
   <component name="GOROOT" url="file:///usr/local/Cellar/go/1.17.1/libexec" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="GoLibraries">
     <option name="indexEntireGoPath" value="false" />
