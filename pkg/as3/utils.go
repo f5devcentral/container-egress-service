@@ -221,6 +221,7 @@ func newFirewallRule(protocol, namespace, action, exsvcName, irule, destAddrAttr
 				},
 			},
 		},
+		LoggingEnabled: true,
 	}
 	if irule != "" {
 		rule.IRule = &IRule{
@@ -480,6 +481,7 @@ func (a as3Application) allDenyRuleList(partition, attr string) {
 				Destination: FirewallDestination{},
 				Source:      FirewallSource{},
 				Action:      "drop",
+				LoggingEnabled: true,
 			},
 		},
 	}
@@ -500,7 +502,7 @@ func (ac *as3Post) dealRule() []ruleData {
 			}
 			for _, clsExSvcName := range clsRule.Spec.ExternalServices {
 				for _, exsvc := range ac.externalServiceList.Items {
-					if clsExSvcName == exsvc.Name && exsvc.Namespace == ClusterSvcExtNamespace {
+					if clsExSvcName == exsvc.Name && exsvc.Namespace == GetClusterSvcExtNamespace() {
 						rule.exsvcs = append(rule.exsvcs, dealExsvc(exsvc))
 					}
 				}

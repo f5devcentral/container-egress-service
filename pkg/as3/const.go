@@ -58,7 +58,6 @@ const (
 )
 
 const (
-	ClusterSvcExtNamespace = "kube-system"
 	NamespaceCidr          = "ovn.kubernetes.io/cidr"
 )
 

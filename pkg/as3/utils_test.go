@@ -75,7 +75,7 @@ func TestPatchPolicyIndex(t *testing.T) {
 			},
 		},
 	}
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 
 	body := PatchBody{}
 
@@ -1867,7 +1867,7 @@ func TestAs3PostDefaultPartition(t *testing.T) {
 			},
 		},
 	}
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	as3 := initDefaultAS3()
 	printObj(as3)
 }
@@ -1950,7 +1950,7 @@ func TestMockClusteEgressRule(t *testing.T) {
 			},
 		},
 	}
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	tntcfg := GetTenantConfigForParttition(DefaultPartition)
 
 	as3post := newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
@@ -2216,7 +2216,7 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 			},
 		},
 	}
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	tntcfg := GetTenantConfigForParttition(DefaultPartition)
 
 	as3post := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
@@ -2250,7 +2250,7 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 	//surpport rd in common
 	t.Log("==================>surpport rd")
 	as3cfg.IsSupportRouteDomain = true
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	tntcfg = GetTenantConfigForParttition("project1")
 	as3post = newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
 	deltaAdc = as3ADC{}
@@ -2460,7 +2460,7 @@ func TestRomteLog(t *testing.T) {
 			},
 		},
 	}
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	post := &as3Post{
 		tenantConfig: &as3cfg.Tenant[0],
 	}
@@ -2469,7 +2469,7 @@ func TestRomteLog(t *testing.T) {
 	printObj(app)
 
 	as3cfg.LogPool.EnableRemoteLog = true
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	post = &as3Post{
 		tenantConfig: &as3cfg.Tenant[0],
 	}
@@ -2479,7 +2479,7 @@ func TestRomteLog(t *testing.T) {
 
 	as3cfg.LogPool.EnableRemoteLog = true
 	as3cfg.IsSupportRouteDomain = true
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	post = &as3Post{
 		tenantConfig: &as3cfg.Tenant[1],
 	}
@@ -2488,7 +2488,7 @@ func TestRomteLog(t *testing.T) {
 	printObj(app)
 
 	as3cfg.LogPool.EnableRemoteLog = false
-	initTenantConfig(as3cfg)
+	initTenantConfig(as3cfg, "kube-system")
 	post = &as3Post{
 		tenantConfig: &as3cfg.Tenant[1],
 	}

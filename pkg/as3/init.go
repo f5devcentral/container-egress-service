@@ -7,15 +7,13 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
-	//"sigs.k8s.io/yaml"
 )
 
-func InitAs3Tenant(client *Client, filePath string, initialized bool) error {
+func InitAs3Tenant(client *Client, filePath string, initialized bool, cesNamespace string) error {
 	config := viper.New()
 	config.AddConfigPath(filePath)
 	config.SetConfigName("ces-conf")
 	config.SetConfigType("yaml")
-
 	// 读取该配置文件
 	config.ReadInConfig()
 	config.WatchConfig()
@@ -25,7 +23,7 @@ func InitAs3Tenant(client *Client, filePath string, initialized bool) error {
 		if err != nil {
 			panic(fmt.Sprintf(" yaml unmarshal err: %v", err))
 		}
-		initTenantConfig(as3Config)
+		initTenantConfig(as3Config, cesNamespace)
 	}
 	initConfigFunc()
 	config.OnConfigChange(func(in fsnotify.Event) {
@@ -60,7 +58,7 @@ namespaces:
 	return nil
 }
 
-func initTenantConfig(as3Config As3Config) {
+func initTenantConfig(as3Config As3Config, cesNamespace string){
 	//store cluster in sync.Map
 	registValue(schemaVersionKey, as3Config.SchemaVersion)
 	registValue(currentClusterKey, as3Config.ClusterName)
@@ -72,6 +70,8 @@ func initTenantConfig(as3Config As3Config) {
 	registValue(isSupportRouteDomainKey, as3Config.IsSupportRouteDomain)
 	registValue(logPoolKey, as3Config.LogPool)
 	registValue(as3IRulesListKey, as3Config.IRule)
+	//store ces serviceacount namespace, used cluster exsvc ns
+	registValue(clusterSvcExtNamespaceKey, cesNamespace)
 	//store tenant in in sync.Map
 	for _, tntconf := range as3Config.Tenant {
 		if tntconf.Name == DefaultPartition {
@@ -230,4 +230,12 @@ func skipDeleteShareApplicationClassOrAttr(partition, attr string) bool {
 func GetIRules() string {
 	irules := getIRules()
 	return strings.Join(irules, ",")
+}
+
+func GetClusterSvcExtNamespace() string{
+	clusterSvcExtNamespace := getValue(clusterSvcExtNamespaceKey)
+	if clusterSvcExtNamespace == nil{
+		return "kube-system"
+	}
+	return clusterSvcExtNamespace.(string)
 }

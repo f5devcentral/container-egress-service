@@ -54,6 +54,7 @@ type FirewallRule struct {
 
 	Source FirewallSource `json:"source,omitempty"`
 	Action string         `json:"action,omitempty"`
+	LoggingEnabled bool   `json:"loggingEnabled,omitempty"`
 }
 
 type IRule struct {

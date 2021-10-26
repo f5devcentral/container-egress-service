@@ -290,6 +290,9 @@ rules:
       - clusteregressrules
       - namespaceegressrules
       - serviceegressrules
+      - clusteregressrules/status
+      - namespaceegressrules/status
+      - serviceegressrules/status
     verbs:
       - get
       - watch

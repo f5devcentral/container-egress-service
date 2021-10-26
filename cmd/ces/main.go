@@ -118,7 +118,7 @@ func main() {
 		}
 	}
 
-	err = as3.InitAs3Tenant(as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), bigipConfDir, initialized)
+	err = as3.InitAs3Tenant(as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), bigipConfDir, initialized, string(bytes.TrimSpace(ns)))
 	if err != nil {
 		klog.Fatalf("failed to initialize AS3 declaration: %v", err)
 	}

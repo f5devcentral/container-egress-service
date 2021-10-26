@@ -96,12 +96,12 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 	}
 	externalServicesList := kubeovn.ExternalServiceList{}
 	for _, exsvcName := range rule.Spec.ExternalServices {
-		exsvc, err := c.externalServicesLister.ExternalServices(as3.ClusterSvcExtNamespace).Get(exsvcName)
+		exsvc, err := c.externalServicesLister.ExternalServices(as3.GetClusterSvcExtNamespace()).Get(exsvcName)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				return err
 			}
-			klog.Warningf("externalService[%s/%s] does not exist", as3.ClusterSvcExtNamespace, exsvcName)
+			klog.Warningf("externalService[%s/%s] does not exist", as3.GetClusterSvcExtNamespace(), exsvcName)
 			continue
 		}
 
