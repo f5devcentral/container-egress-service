@@ -440,6 +440,13 @@ spec:
         - name: ces-controller
           image: kubeovn/ces-controller:0.1.0
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: '1'
+              memory: 1Gi
+            limits:
+              cpu: '1'
+              memory: 1Gi
           command:
             - /ces-controller
             - --bigip-url=$BIGIP_URL
