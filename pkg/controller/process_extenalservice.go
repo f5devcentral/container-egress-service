@@ -89,7 +89,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		err = fmt.Errorf("The bandwidth field is invalid, one of them should be filled in %s", as3.GetIRules())
 		return err
 	}
-	ruleType := es.Labels[as3.RuleTypeLabel]
+	ruleType := service.Labels[as3.RuleTypeLabel]
 	find := false
 	clusterEgressruleList := kubeovn.ClusterEgressRuleList{}
 	namespaceEgressRuleList := kubeovn.NamespaceEgressRuleList{}
@@ -112,7 +112,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 				break
 			}
 			for _, exSvc := range rule.Spec.ExternalServices {
-				if exSvc == es.Name {
+				if exSvc == service.Name {
 					find = true
 					clusterEgressruleList.Items = append(clusterEgressruleList.Items, *rule)
 					break
@@ -121,7 +121,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		}
 		tntcfg = as3.GetTenantConfigForParttition(as3.DefaultPartition)
 	case as3.RuleTypeNamespace:
-		ruleList, err := c.namespaceEgressRuleLister.NamespaceEgressRules(es.Namespace).List(labels.Everything())
+		ruleList, err := c.namespaceEgressRuleLister.NamespaceEgressRules(service.Namespace).List(labels.Everything())
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 				break
 			}
 			for _, exSvc := range rule.Spec.ExternalServices {
-				if exSvc == es.Name {
+				if exSvc == service.Name {
 					find = true
 					namespaceEgressRuleList.Items = append(namespaceEgressRuleList.Items, *rule)
 					break
@@ -139,7 +139,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		}
 		tntcfg = as3.GetTenantConfigForNamespace(service.Namespace)
 	case as3.RuleTypeService:
-		ruleList, err := c.seviceEgressRuleLister.ServiceEgressRules(es.Namespace).List(labels.Everything())
+		ruleList, err := c.seviceEgressRuleLister.ServiceEgressRules(service.Namespace).List(labels.Everything())
 		if err != nil {
 			return err
 		}
