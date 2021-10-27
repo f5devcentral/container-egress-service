@@ -73,14 +73,6 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		isDelete = true
 	} else {
 		rule = r
-		if rule.Status.Phase != kubeovn.ClusterEgressRuleSyncing {
-			rule.Status.Phase = kubeovn.ClusterEgressRuleSyncing
-			rule, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule,
-				metav1.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	defer func() {
@@ -89,11 +81,6 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		}
 	}()
 
-	clusterEgressruleList := kubeovn.ClusterEgressRuleList{
-		Items: []kubeovn.ClusterEgressRule{
-			*rule,
-		},
-	}
 	externalServicesList := kubeovn.ExternalServiceList{}
 	for _, exsvcName := range rule.Spec.ExternalServices {
 		exsvc, err := c.externalServicesLister.ExternalServices(as3.GetClusterSvcExtNamespace()).Get(exsvcName)
@@ -130,7 +117,23 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
 	}
-
+	if len(externalServicesList.Items) == 0{
+		klog.Warningf("ExternalServices is not found in clusterEgressRule[%s/%s], no need synchronize", rule.Namespace, rule.Name)
+		return nil
+	}
+	if !isDelete && rule.Status.Phase != kubeovn.ClusterEgressRuleSyncing {
+		rule.Status.Phase = kubeovn.ClusterEgressRuleSyncing
+		rule, err = c.as3clientset.KubeovnV1alpha1().ClusterEgressRules().UpdateStatus(context.Background(), rule,
+			metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	clusterEgressruleList := kubeovn.ClusterEgressRuleList{
+		Items: []kubeovn.ClusterEgressRule{
+			*rule,
+		},
+	}
 	tntcfg := as3.GetTenantConfigForParttition(as3.DefaultPartition)
 	err = c.as3Client.As3Request(nil, nil, &clusterEgressruleList, &externalServicesList, nil, nil,
 		tntcfg, as3.RuleTypeGlobal, isDelete)

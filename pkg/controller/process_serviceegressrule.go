@@ -82,14 +82,6 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		isDelete = true
 	} else {
 		rule = r
-		if rule.Status.Phase != kubeovn.ServiceEgressRuleSyncing {
-			rule.Status.Phase = kubeovn.ServiceEgressRuleSyncing
-			rule, err = c.as3clientset.KubeovnV1alpha1().ServiceEgressRules(namespace).UpdateStatus(context.Background(), rule,
-				v1.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	defer func() {
@@ -104,11 +96,6 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		return err
 	}
 
-	serviceEgressruleList := kubeovn.ServiceEgressRuleList{
-		Items: []kubeovn.ServiceEgressRule{
-			*rule,
-		},
-	}
 	externalServicesList := kubeovn.ExternalServiceList{}
 	//set source address, ns subnet
 
@@ -153,7 +140,23 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
 	}
-
+	if len(externalServicesList.Items) == 0{
+		klog.Warningf("ExternalServices is not found in serviceEgressRules[%s/%s], no need synchronize", rule.Namespace, rule.Name)
+		return nil
+	}
+	if !isDelete && rule.Status.Phase != kubeovn.ServiceEgressRuleSyncing {
+		rule.Status.Phase = kubeovn.ServiceEgressRuleSyncing
+		rule, err = c.as3clientset.KubeovnV1alpha1().ServiceEgressRules(namespace).UpdateStatus(context.Background(), rule,
+			v1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	serviceEgressruleList := kubeovn.ServiceEgressRuleList{
+		Items: []kubeovn.ServiceEgressRule{
+			*rule,
+		},
+	}
 	tntcfg := as3.GetTenantConfigForNamespace(namespace)
 	err = c.as3Client.As3Request(&serviceEgressruleList, nil, nil, &externalServicesList, &endpointsList, nil,
 		tntcfg, as3.RuleTypeService, isDelete)

@@ -81,14 +81,6 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		isDelete = true
 	} else {
 		rule = r
-		if rule.Status.Phase != kubeovn.NamespaceEgressRuleSyncing {
-			rule.Status.Phase = kubeovn.NamespaceEgressRuleSyncing
-			rule, err = c.as3clientset.KubeovnV1alpha1().NamespaceEgressRules(namespace).UpdateStatus(context.Background(), rule,
-				v1.UpdateOptions{})
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	defer func() {
@@ -101,11 +93,6 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 	if err != nil {
 		klog.Errorf("failed to get namespace[%s],due to: %v", namespace, err)
 		return err
-	}
-	namespaceEgressruleList := kubeovn.NamespaceEgressRuleList{
-		Items: []kubeovn.NamespaceEgressRule{
-			*rule,
-		},
 	}
 	externalServicesList := kubeovn.ExternalServiceList{}
 	//set source address, ns subnet
@@ -151,7 +138,23 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
 	}
-
+	if len(externalServicesList.Items) == 0{
+		klog.Warningf("ExternalServices is not found in namespaceEgressRules[%s/%s], no need synchronize", rule.Namespace, rule.Name)
+		return nil
+	}
+	if !isDelete && rule.Status.Phase != kubeovn.NamespaceEgressRuleSyncing {
+		rule.Status.Phase = kubeovn.NamespaceEgressRuleSyncing
+		rule, err = c.as3clientset.KubeovnV1alpha1().NamespaceEgressRules(namespace).UpdateStatus(context.Background(), rule,
+			v1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	namespaceEgressruleList := kubeovn.NamespaceEgressRuleList{
+		Items: []kubeovn.NamespaceEgressRule{
+			*rule,
+		},
+	}
 	tntcfg := as3.GetTenantConfigForNamespace(namespace)
 	err = c.as3Client.As3Request(nil, &namespaceEgressruleList, nil, &externalServicesList, nil, &namespaceList,
 		tntcfg, as3.RuleTypeNamespace, isDelete)

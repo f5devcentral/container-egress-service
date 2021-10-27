@@ -66,13 +66,15 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 	klog.Infof("===============================>start sync externalService[%s]", name)
 	defer klog.Infof("===============================>end sync externalService[%s]", name)
 
+	var isDelete bool
 	var es *kubeovn.ExternalService
 	if es, err = c.externalServicesLister.ExternalServices(namespace).Get(name); err != nil {
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		klog.Errorf("externalservices[%s] not found", name)
-		return nil
+		//klog.Errorf("externalservices[%s] not found", name)
+		//return nil
+		isDelete = true
 	} else {
 		service = es
 	}
@@ -164,7 +166,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		return nil
 	}
 	err = c.as3Client.As3Request(&serviceEgressRuleList, &namespaceEgressRuleList, &clusterEgressruleList, &externalServicesList, nil, nil,
-		tntcfg, ruleType, false)
+		tntcfg, ruleType, isDelete)
 	if err != nil {
 		klog.Error(err)
 		return err

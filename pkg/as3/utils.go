@@ -882,6 +882,10 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 		return src
 	}
 	for _, deltaRule := range deltaPolicy.Rules {
+		//skip  deny all in svc policy
+		if strings.Contains(deltaRule.Use, getAllDenyRuleListAttr()){
+			continue
+		}
 		isExist := false
 		for i, srcRule := range srcPolicy.Rules {
 			if deltaRule.Use == srcRule.Use {

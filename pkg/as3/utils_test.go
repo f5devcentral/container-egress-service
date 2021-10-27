@@ -2100,6 +2100,17 @@ func TestMockClusteEgressRule(t *testing.T) {
 	srcAdc = as3ADC(srcAs3[DeclarationKey].(map[string]interface{}))
 	body = fullResource(DefaultPartition, true, srcAdc, deltaAdc)
 	printObj(body)
+
+	//delete only one clusteregressrule
+	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	srcAdc = as3ADC{}
+	deltaAdc = as3ADC{}
+	as3post.generateAS3ResourceDeclaration(srcAdc)
+	printObj(srcAdc)
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+	body = fullResource(DefaultPartition, true, srcAdc, deltaAdc)
+	printObj(body)
+
 }
 
 func TestMockNamespaceEgressRule(t *testing.T) {
@@ -2345,6 +2356,10 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 	//delete namespaceegressrule
 	body = fullResource("Common", true, srcAdc, deltaAdc)
 	printObj(body)
+}
+
+func TestMockServiceEgressRule(t *testing.T){
+
 }
 
 func TestRomteLog(t *testing.T) {

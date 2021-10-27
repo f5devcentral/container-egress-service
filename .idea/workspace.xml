@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="" />
+    <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_namespaceegressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_namespaceegressrule.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_serviceegressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_serviceegressrule.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -257,7 +264,7 @@
       <recent name="$PROJECT_DIR$/pkg/controller" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.ces-controller">
+  <component name="RunManager" selected="Go Test.TestMockClusteEgressRule in github.com/kubeovn/ces-controller/pkg/as3 (1)">
     <configuration name="ces-controller" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
       <module name="ces-controller" />
       <working_directory value="$PROJECT_DIR$/" />
@@ -322,8 +329,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Build.ces-controller" />
         <item itemvalue="Go Test.TestMockClusteEgressRule in github.com/kubeovn/ces-controller/pkg/as3 (1)" />
+        <item itemvalue="Go Build.ces-controller" />
         <item itemvalue="Go Test.TestRomteLog in github.com/kubeovn/ces-controller/pkg/as3" />
         <item itemvalue="Go Test.TestNewAddress in github.com/kubeovn/ces-controller/pkg/as3" />
         <item itemvalue="Go Test.TestMockNamespaceEgressRule in github.com/kubeovn/ces-controller/pkg/as3" />
