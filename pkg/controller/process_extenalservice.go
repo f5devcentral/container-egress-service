@@ -72,9 +72,8 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		if !errors.IsNotFound(err) {
 			return err
 		}
-		//klog.Errorf("externalservices[%s] not found", name)
-		//return nil
 		isDelete = true
+		err = nil
 	} else {
 		service = es
 	}
