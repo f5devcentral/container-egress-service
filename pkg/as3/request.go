@@ -37,6 +37,7 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 	err = c.post(reqBody, partition)
 	if err != nil {
 		err = fmt.Errorf("failed to request AS3 POST API: %v", err)
+		return err
 	}
 
 	if ty == RuleTypeGlobal {

@@ -221,9 +221,11 @@ func handleResponse(statusCode int, response map[string]interface{}) error {
 			klog.Errorf("Response from BIG-IP: code = %v, tenant = %v, message = %v, response = %v", v["code"], v["tenant"], v["message"], v["response"])
 		}
 	} else if err, ok := (response["error"]).(map[string]interface{}); ok {
-		klog.Errorf("Big-IP Responded with error code: %v", err["code"])
+		//klog.Errorf("Big-IP Responded with error code: %v", err["code"])
+		return fmt.Errorf("Big-IP Responded with error code: %v", err["code"])
 	} else {
-		klog.Errorf("Big-IP Responded with code: %v", response["code"])
+		//klog.Errorf("Big-IP Responded with code: %v", response["code"])
+		return fmt.Errorf("Big-IP Responded with code: %v", response["code"])
 	}
 	return fmt.Errorf("AS3 responds with status code %d - %s", statusCode, http.StatusText(statusCode))
 }

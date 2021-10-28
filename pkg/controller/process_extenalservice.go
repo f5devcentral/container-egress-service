@@ -148,7 +148,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 				break
 			}
 			for _, exSvc := range rule.Spec.ExternalServices {
-				if exSvc == es.Name {
+				if exSvc == service.Name {
 					find = true
 					serviceEgressRuleList.Items = append(serviceEgressRuleList.Items, *rule)
 					break
@@ -171,7 +171,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		klog.Error(err)
 		return err
 	}
-	c.recorder.Event(es, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
+	c.recorder.Event(service, corev1.EventTypeNormal, SuccessSynced, MessageResourceSynced)
 	return nil
 }
 

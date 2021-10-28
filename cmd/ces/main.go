@@ -102,8 +102,8 @@ func main() {
 
 	ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
-		ns = []byte("kube-system")
-		//klog.Fatalf("Error reading /var/run/secrets/kubernetes.io/serviceaccount/namespace: %v", err)
+		//ns = []byte("dwb-test")
+		klog.Fatalf("Error reading /var/run/secrets/kubernetes.io/serviceaccount/namespace: %v", err)
 	}
 
 	cm, err := kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Get(context.Background(), controller.ControllerConfigmap, metav1.GetOptions{})

@@ -2359,7 +2359,134 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 }
 
 func TestMockServiceEgressRule(t *testing.T){
+}
 
+func TestMockExtenalService(t *testing.T){
+	cgRuleList := kubeovnv1alpha1.ClusterEgressRuleList{
+		Items: []kubeovnv1alpha1.ClusterEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test1",
+				},
+				Spec: kubeovnv1alpha1.ClusterEgressRuleSpec{
+					Action: "accept",
+					ExternalServices: []string{
+						"exsvc1",
+					},
+				},
+			},
+		},
+	}
+	nsRuleList := kubeovnv1alpha1.NamespaceEgressRuleList{}
+	svcRuleList := kubeovnv1alpha1.ServiceEgressRuleList{}
+	exsvcList := kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+				    Name: "exsvc1",
+				    Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.1",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "xxx",
+							Protocol: "tcp",
+							Port: "8080",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	as3cfg := As3Config{
+		ClusterName:          "k8s",
+		IsSupportRouteDomain: false,
+		Tenant: []TenantConfig{
+			{
+				Name: "Common",
+				RouteDomain: RouteDomain{
+					Name: "0",
+					Id:   0,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.1"},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg, "dwb-test")
+	tntcfg := GetTenantConfigForParttition(DefaultPartition)
+	as3 := initDefaultAS3()
+	adc := as3[DeclarationKey].(as3ADC)
+	as3post := newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	as3post.generateAS3ResourceDeclaration(adc)
+	deltaAdc := as3ADC{}
+    as3post.generateAS3ResourceDeclaration(deltaAdc)
+	printObj(deltaAdc)
+	//delete exsvc
+	body := fullResource("Common", true, adc, deltaAdc)
+	printObj(body)
+
+	//There are bwt and no bwt at the same time
+	t.Log("test: There are bwt and no bwt at the same time")
+	exsvcList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc1",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.1",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "tcp-8080",
+							Protocol: "tcp",
+							Port: "8080",
+						},{
+							Name: "tcp-443",
+							Protocol: "tcp",
+							Port: "443",
+							Bandwidth: "bwc-1mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3post = newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	adc = as3ADC{}
+	as3post.generateAS3ResourceDeclaration(adc)
+	printObj(adc)
+
+	// There are not ports, only has address
+	t.Log("test: There are not ports, only has address")
+	exsvcList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc1",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.1",
+					},
+				},
+			},
+		},
+	}
+	as3post = newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	adc = as3ADC{}
+	as3post.generateAS3ResourceDeclaration(adc)
+	printObj(adc)
 }
 
 func TestRomteLog(t *testing.T) {

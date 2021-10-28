@@ -163,11 +163,13 @@ func (ac *as3Post) newRulesDecl(sharedApp as3Application) map[string][]Use {
 			//app add dest address
 			as3DesAddrAttr := getAs3DestAddrAttr(rule.ty, rule.namespace, rule.name, evc.name)
 			newFirewallAddressList(as3DesAddrAttr, evc.destAddress, sharedApp)
-
+			//app add dest port
 			for ptl, ports := range evc.destPorts {
 				as3DestPortAddr := getAs3DestPortAttr(rule.ty, rule.namespace, rule.name, evc.name, ptl)
 				//app add port
-				newFirewallPortsList(as3DestPortAddr, ports.ports, sharedApp)
+				if ptl != "any"{
+					newFirewallPortsList(as3DestPortAddr, ports.ports, sharedApp)
+				}
 				//rule list add rule
 				fwrList.Rules = append(fwrList.Rules, newFirewallRule(ptl, rule.namespace, rule.action, evc.name, ports.irule,
 					as3DesAddrAttr,
@@ -223,10 +225,14 @@ func newFirewallRule(protocol, namespace, action, exsvcName, irule, destAddrAttr
 		},
 		LoggingEnabled: true,
 	}
+	if protocol == "any"{
+		rule.Destination.PortLists = nil
+	}
 	if irule != "" {
 		rule.IRule = &IRule{
 			Bigip: fmt.Sprintf("/Common/%s", irule),
 		}
+		rule.Protocol = strings.Replace(rule.Protocol, "_bwc", "", 1)
 	}
 	if srcAddrAttr != "" {
 		rule.Source = FirewallSource(FirewallDestination{
@@ -568,18 +574,23 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 		name:        exsvc.Name,
 		destAddress: exsvc.Spec.Addresses,
 	}
-
 	ptlMap := make(map[string]portIrule)
 	for _, pt := range exsvc.Spec.Ports {
 		if pt.Port != "" {
 			ptl := strings.ToLower(pt.Protocol)
-			ports := append(ptlMap[ptl].ports, strings.Split(pt.Port, ",")...)
-			ptlMap[ptl] = portIrule{
+			key := ptl
+			if pt.Bandwidth != ""{
+				key = fmt.Sprintf("%s_bwc", key)
+			}
+			//if the ports has bwt, set the suffix of the key to "_bwt"
+			ports := append(ptlMap[key].ports, strings.Split(pt.Port, ",")...)
+			ptlMap[key] = portIrule{
 				irule: pt.Bandwidth,
 				ports: ports,
 			}
 		}
 	}
+	//No port does not need to create a port list
 	if len(ptlMap) == 0 {
 		ptlMap["any"] = portIrule{}
 	}
@@ -882,16 +893,16 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 		return src
 	}
 	for _, deltaRule := range deltaPolicy.Rules {
-		//skip  deny all in svc policy
-		if strings.Contains(deltaRule.Use, getAllDenyRuleListAttr()){
-			continue
-		}
 		isExist := false
 		for i, srcRule := range srcPolicy.Rules {
 			if deltaRule.Use == srcRule.Use {
 				isExist = true
 				//if find, delete
 				if isDelete {
+					//skip  deny all in svc policy
+					if strings.Contains(deltaRule.Use, getAllDenyRuleListAttr()){
+						continue
+					}
 					srcPolicy.Rules = append(srcPolicy.Rules[:i], srcPolicy.Rules[i+1:]...)
 				}
 				break
