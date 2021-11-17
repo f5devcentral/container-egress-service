@@ -3,7 +3,9 @@ package as3
 import (
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"k8s.io/klog/v2"
 	"net/http"
 	"testing"
 
@@ -2405,6 +2407,7 @@ func TestMockExtenalService(t *testing.T){
 	as3cfg := As3Config{
 		ClusterName:          "k8s",
 		IsSupportRouteDomain: false,
+		LoggingEnabled: false,
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",
@@ -2487,6 +2490,13 @@ func TestMockExtenalService(t *testing.T){
 	adc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
 	printObj(adc)
+
+	//There are not ports, only has address, delete exsvc
+	t.Log("There are not ports, only has address, delete exsvc")
+	deltaAdc1 := map[string]interface{}{}
+	validateJSONAndFetchObject(adc, &deltaAdc1)
+	body = fullResource(DefaultPartition, true, adc, deltaAdc1)
+	printObj(body)
 }
 
 func TestRomteLog(t *testing.T) {
@@ -2661,4 +2671,14 @@ func TestNewAddress(t *testing.T) {
 	app = as3Application{}
 	newFirewallAddressList("k8s_ns_src_addr", addresses, app)
 	printObj(app)
+}
+
+
+func TestLogLevel(t *testing.T){
+	klog.InitFlags(nil)
+	flag.Set("v", "3")
+	klog.Infof("xxx")
+	klog.V(1).Infof("low level log")
+	klog.V(4).Infof("high level log")
+	klog.Errorf("error log")
 }
