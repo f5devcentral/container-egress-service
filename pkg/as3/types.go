@@ -122,6 +122,7 @@ type (
 		MasterCluster        string         `mapstructure:"master_cluster"`
 		IsSupportRouteDomain bool           `mapstructure:"isSupportRouteDomain"`
 		IRule                []string       `mapstructure:"iRule"`
+		LoggingEnabled       bool           `mapstructure:"loggingEnabled"`
 		Tenant               []TenantConfig `mapstructure:"tenant"`
 		LogPool              LogPool        `mapstructure:"logPool"`
 	}

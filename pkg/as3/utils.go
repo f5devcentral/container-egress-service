@@ -223,7 +223,7 @@ func newFirewallRule(protocol, namespace, action, exsvcName, irule, destAddrAttr
 				},
 			},
 		},
-		LoggingEnabled: true,
+		LoggingEnabled: loggingEnabled(),
 	}
 	if protocol == "any"{
 		rule.Destination.PortLists = nil
@@ -487,7 +487,7 @@ func (a as3Application) allDenyRuleList(partition, attr string) {
 				Destination: FirewallDestination{},
 				Source:      FirewallSource{},
 				Action:      "drop",
-				LoggingEnabled: true,
+				LoggingEnabled: loggingEnabled(),
 			},
 		},
 	}

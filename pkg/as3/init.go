@@ -70,6 +70,7 @@ func initTenantConfig(as3Config As3Config, cesNamespace string){
 	registValue(isSupportRouteDomainKey, as3Config.IsSupportRouteDomain)
 	registValue(logPoolKey, as3Config.LogPool)
 	registValue(as3IRulesListKey, as3Config.IRule)
+	registValue(LoggingEnabledKey, as3Config.LoggingEnabled)
 	//store ces serviceacount namespace, used cluster exsvc ns
 	registValue(clusterSvcExtNamespaceKey, cesNamespace)
 	//store tenant in in sync.Map
@@ -192,6 +193,18 @@ func getIRules() []string {
 		return []string{}
 	}
 	return irules
+}
+
+func loggingEnabled()bool{
+	v := getValue(LoggingEnabledKey)
+	if v == nil{
+		return false
+	}
+	enabled, ok := v.(bool)
+	if !ok{
+		return false
+	}
+	return enabled
 }
 
 func isNotFound(err error) bool {
