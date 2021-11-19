@@ -2531,7 +2531,6 @@ func TestMockExtenalService(t *testing.T){
 	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
 	adc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
-	printObj(adc)
 	exsvcList = kubeovnv1alpha1.ExternalServiceList{
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
@@ -2563,7 +2562,6 @@ func TestMockExtenalService(t *testing.T){
 	as3post =  newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
 	deltaAdc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
-	printObj(deltaAdc)
 	body = fullResource(DefaultPartition, false, adc, deltaAdc)
 	printObj(body)
 }

@@ -210,7 +210,7 @@ func newFirewallRule(fwrName, protocol, namespace, action, exsvcName, irule, des
 	rule := FirewallRule{
 		Protocol: protocol,
 		Action:   action,
-		Name:     fmt.Sprintf("%s_%s_%s", action, exsvcName, protocol),
+		Name:     fmt.Sprintf("%s_%s_%s", action, exsvcName, fwrName),
 		Destination: FirewallDestination{
 			AddressLists: []Use{
 				Use{
