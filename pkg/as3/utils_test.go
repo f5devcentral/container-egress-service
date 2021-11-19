@@ -2497,6 +2497,75 @@ func TestMockExtenalService(t *testing.T){
 	validateJSONAndFetchObject(adc, &deltaAdc1)
 	body = fullResource(DefaultPartition, true, adc, deltaAdc1)
 	printObj(body)
+
+	//modify protocol
+	printObj("modify protocol:")
+	exsvcList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc1",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.1",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "udp-81",
+							Protocol: "udp",
+							Port: "81-91",
+							Bandwidth: "bwc-2mbps-irule",
+						},{
+							Name: "tcp-443",
+							Protocol: "tcp",
+							Port: "443",
+							Bandwidth: "bwc-1mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	adc = as3ADC{}
+	as3post.generateAS3ResourceDeclaration(adc)
+	printObj(adc)
+	exsvcList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc1",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.1",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "tcp-81",
+							Protocol: "TCP",
+							Port: "81-91",
+							Bandwidth: "bwc-2mbps-irule",
+						},{
+							Name: "tcp-443",
+							Protocol: "tcp",
+							Port: "443",
+							Bandwidth: "bwc-1mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3post =  newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	deltaAdc = as3ADC{}
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+	printObj(deltaAdc)
+	body = fullResource(DefaultPartition, false, adc, deltaAdc)
+	printObj(body)
 }
 
 func TestRomteLog(t *testing.T) {

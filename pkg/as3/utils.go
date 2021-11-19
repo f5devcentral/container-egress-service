@@ -164,14 +164,14 @@ func (ac *as3Post) newRulesDecl(sharedApp as3Application) map[string][]Use {
 			as3DesAddrAttr := getAs3DestAddrAttr(rule.ty, rule.namespace, rule.name, evc.name)
 			newFirewallAddressList(as3DesAddrAttr, evc.destAddress, sharedApp)
 			//app add dest port
-			for ptl, ports := range evc.destPorts {
-				as3DestPortAddr := getAs3DestPortAttr(rule.ty, rule.namespace, rule.name, evc.name, ptl)
+			for key, ports := range evc.destPorts {
+				as3DestPortAddr := getAs3DestPortAttr(rule.ty, rule.namespace, rule.name, evc.name, key)
 				//app add port
-				if ptl != "any"{
+				if key != "any"{
 					newFirewallPortsList(as3DestPortAddr, ports.ports, sharedApp)
 				}
 				//rule list add rule
-				fwrList.Rules = append(fwrList.Rules, newFirewallRule(ptl, rule.namespace, rule.action, evc.name, ports.irule,
+				fwrList.Rules = append(fwrList.Rules, newFirewallRule(key, ports.protocol, rule.namespace, rule.action, evc.name, ports.irule,
 					as3DesAddrAttr,
 					as3DestPortAddr,
 					as3SrcAddrAttr))
@@ -206,7 +206,7 @@ func newFirewallRuleList() FirewallRuleList {
 	}
 }
 
-func newFirewallRule(protocol, namespace, action, exsvcName, irule, destAddrAttr, destPortAttr, srcAddrAttr string) FirewallRule {
+func newFirewallRule(fwrName, protocol, namespace, action, exsvcName, irule, destAddrAttr, destPortAttr, srcAddrAttr string) FirewallRule {
 	rule := FirewallRule{
 		Protocol: protocol,
 		Action:   action,
@@ -232,7 +232,6 @@ func newFirewallRule(protocol, namespace, action, exsvcName, irule, destAddrAttr
 		rule.IRule = &IRule{
 			Bigip: fmt.Sprintf("/Common/%s", irule),
 		}
-		rule.Protocol = strings.Replace(rule.Protocol, "_bwc", "", 1)
 	}
 	if srcAddrAttr != "" {
 		rule.Source = FirewallSource(FirewallDestination{
@@ -579,8 +578,15 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 		if pt.Port != "" {
 			ptl := strings.ToLower(pt.Protocol)
 			key := ptl
-			if pt.Bandwidth != ""{
-				key = fmt.Sprintf("%s_bwc", key)
+			//to diff bwt is processed separately
+			if v, ok := ptlMap[key]; ok{
+				if v.irule != pt.Bandwidth{
+					key = pt.Name
+				}
+			}else{
+				if pt.Bandwidth != ""{
+					key = pt.Name
+				}
 			}
 			//if the ports has bwt, set the suffix of the key to "_bwt"
 			ports := append(ptlMap[key].ports, strings.Split(pt.Port, ",")...)
@@ -686,6 +692,14 @@ func getAs3UsePathForNamespace(namespace, attr string) string {
 	}
 
 	return fmt.Sprintf("/%s/Shared/%s", partition, attr)
+}
+
+func getOriginAttrOfUsePath(use string)string{
+	k := strings.Split(use, "/")
+	if len(k) < 4{
+		return ""
+	}
+	return k[3]
 }
 
 func translateAs3Declaration(decl interface{}) as3Declaration {
@@ -871,6 +885,8 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 			}
 		}
 	}
+
+	clearUpUnreferencePolicy(srcApp)
 	return newAs3Obj(partition, srcApp)
 }
 
@@ -914,6 +930,52 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 	}
 	return srcPolicy
 }
+
+func clearUpUnreferencePolicy(shareApp map[string]interface{}){
+	flag1 := map[string]bool{}
+	flag2 := map[string]bool{}
+	for key, value := range shareApp {
+		obj, ok := value.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		class := obj[ClassKey]
+		if class == nil {
+			continue
+		}
+		switch class.(string) {
+		case ClassFirewallRuleList:
+			rules := obj["rules"].([]interface{})
+			for _, rule := range rules {
+				dest := rule.(map[string]interface{})["destination"].(map[string]interface{})
+				if addressList, ok := dest["addressLists"]; ok {
+					for _, uses := range addressList.([]interface{}) {
+						use := getOriginAttrOfUsePath(uses.(map[string]interface{})["use"].(string))
+						flag1[use] = true
+					}
+				}
+				if portList, ok := dest["portLists"]; ok {
+					for _, uses := range portList.([]interface{}) {
+						use := getOriginAttrOfUsePath(uses.(map[string]interface{})["use"].(string))
+						flag1[use] = true
+					}
+				}
+			}
+		case ClassFirewallAddressList, ClassFirewallPortList:
+			flag2[key] = true
+		}
+	}
+	for k, _ := range flag2 {
+		if _, ok := flag1[k]; !ok {
+			delete(shareApp, k)
+		}
+	}
+}
+
+func translateFWRType(obj interface{}, ty string) interface{}{
+	return nil
+}
+
 
 func validateJSONAndFetchObject(obj interface{}, jsonObj *map[string]interface{}) error {
 	jsonData := ""

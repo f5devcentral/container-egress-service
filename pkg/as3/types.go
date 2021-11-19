@@ -185,6 +185,7 @@ type (
 
 type (
 	portIrule struct {
+		protocol string
 		irule string
 		ports []string
 	}
