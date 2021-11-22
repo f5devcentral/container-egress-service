@@ -17,12 +17,10 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -100,13 +98,17 @@ func main() {
 		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
-	ns, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-	if err != nil {
-		//ns = []byte("dwb-test")
-		klog.Fatalf("Error reading /var/run/secrets/kubernetes.io/serviceaccount/namespace: %v", err)
+	dm, err := kubeClient.AppsV1().Deployments("").List(context.Background(), metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", controller.ControllerAgentName),
+	})
+	if err != nil{
+		klog.Fatalf("failed to get deploy[%s]: %v", controller.ControllerAgentName, err)
 	}
-
-	cm, err := kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Get(context.Background(), controller.ControllerConfigmap, metav1.GetOptions{})
+	if len(dm.Items) != 1{
+		klog.Fatalf("failed to get deploy[%s]", controller.ControllerAgentName)
+	}
+	ns := dm.Items[0].Namespace
+	cm, err := kubeClient.CoreV1().ConfigMaps(ns).Get(context.Background(), controller.ControllerConfigmap, metav1.GetOptions{})
 	if err != nil {
 		klog.Fatalf("failed to get configmap[%s]: %v", controller.ControllerConfigmap, err)
 	}
@@ -118,13 +120,13 @@ func main() {
 		}
 	}
 
-	err = as3.InitAs3Tenant(as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), bigipConfDir, initialized, string(bytes.TrimSpace(ns)))
+	err = as3.InitAs3Tenant(as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), bigipConfDir, initialized, ns)
 	if err != nil {
 		klog.Fatalf("failed to initialize AS3 declaration: %v", err)
 	}
 	if !initialized {
 		cm.Data["initialized"] = "true"
-		if _, err = kubeClient.CoreV1().ConfigMaps(string(bytes.TrimSpace(ns))).Update(context.Background(), cm, metav1.UpdateOptions{}); err != nil {
+		if _, err = kubeClient.CoreV1().ConfigMaps(ns).Update(context.Background(), cm, metav1.UpdateOptions{}); err != nil {
 			klog.Fatalf("failed to update configmap[%s]: %v", controller.ControllerConfigmap, err)
 		}
 	}

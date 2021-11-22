@@ -41,7 +41,7 @@ import (
 	listers "github.com/kubeovn/ces-controller/pkg/generated/listers/kubeovn.io/v1alpha1"
 )
 
-const controllerAgentName = "ces-controller"
+const ControllerAgentName = "ces-controller"
 
 const ControllerConfigmap = "ces-controller-configmap"
 
@@ -98,7 +98,7 @@ func NewController(
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartStructuredLogging(0)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: ControllerAgentName})
 
 	controller := &Controller{
 		kubeclientset:                kubeclientset,

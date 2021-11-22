@@ -121,9 +121,8 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 
 		//delete ruleType
 		if isDelete{
-			labels := exsvc.Labels
-			delete(labels, as3.RuleTypeLabel)
-			_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
+			delete(exsvc.Labels, as3.RuleTypeLabel)
+			_, err := c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
 				metav1.UpdateOptions{})
 			if err != nil {
 				return err
@@ -131,7 +130,7 @@ func (c *Controller) serviceEgressRuleSyncHandler(key string, rule *kubeovn.Serv
 		}else{
 			if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeService {
 				exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeService
-				_, err = c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
+				_, err := c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
 					metav1.UpdateOptions{})
 				if err != nil {
 					return err

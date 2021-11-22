@@ -167,7 +167,7 @@ func (ac *as3Post) newRulesDecl(sharedApp as3Application) map[string][]Use {
 			for key, ports := range evc.destPorts {
 				as3DestPortAddr := getAs3DestPortAttr(rule.ty, rule.namespace, rule.name, evc.name, key)
 				//app add port
-				if key != "any"{
+				if ports.protocol != ""{
 					newFirewallPortsList(as3DestPortAddr, ports.ports, sharedApp)
 				}
 				//rule list add rule
@@ -225,7 +225,7 @@ func newFirewallRule(fwrName, protocol, namespace, action, exsvcName, irule, des
 		},
 		LoggingEnabled: loggingEnabled(),
 	}
-	if protocol == "any"{
+	if protocol == ""{
 		rule.Destination.PortLists = nil
 	}
 	if irule != "" {
@@ -591,6 +591,7 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 			//if the ports has bwt, set the suffix of the key to "_bwt"
 			ports := append(ptlMap[key].ports, strings.Split(pt.Port, ",")...)
 			ptlMap[key] = portIrule{
+				protocol: ptl,
 				irule: pt.Bandwidth,
 				ports: ports,
 			}

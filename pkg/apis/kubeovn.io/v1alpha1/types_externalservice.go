@@ -24,7 +24,7 @@ type ExternalServicePort struct {
 // ExternalServiceSpec is the spec for a ExternalService resource
 type ExternalServiceSpec struct {
 	Addresses []string              `json:"addresses"`
-	Ports     []ExternalServicePort `json:"ports"`
+	Ports     []ExternalServicePort `json:"ports,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

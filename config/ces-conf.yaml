@@ -1,5 +1,5 @@
 clusterName: k8s
-isSupportRouteDomain: true
+isSupportRouteDomain: false
 ##AS3 basic configuration
 ##Multi-cluster docking single BIG-IP, controller Common init and remote log
 masterCluster: k8s

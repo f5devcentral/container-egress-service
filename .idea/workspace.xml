@@ -3,7 +3,16 @@
   <component name="ChangeListManager">
     <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/as3/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/ces/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/ces/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/ces-conf.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/ces-conf.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/examples.yml" beforeDir="false" afterPath="$PROJECT_DIR$/examples/examples.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/apis/kubeovn.io/v1alpha1/types_externalservice.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/apis/kubeovn.io/v1alpha1/types_externalservice.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/apis/kubeovn.io/v1alpha1/zz_generated.deepcopy.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/apis/kubeovn.io/v1alpha1/zz_generated.deepcopy.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/controller.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_namespaceegressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_namespaceegressrule.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_serviceegressrule.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_serviceegressrule.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,7 +98,7 @@
     <setting file="file://$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/config/ces-conf.yaml" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/pkg/controller/process_endpoint.go" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/examples/examples.yml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/examples/examples.yaml" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/cmd/ces/main.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/pkg/as3/register.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/pkg/as3/utils_test.go" root0="FORCE_HIGHLIGHTING" />
@@ -274,11 +283,11 @@
       <recent name="$PROJECT_DIR$/pkg/controller" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestMockExtenalService in github.com/kubeovn/ces-controller/pkg/as3">
+  <component name="RunManager" selected="Go Build.ces-controller">
     <configuration name="ces-controller" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
       <module name="ces-controller" />
       <working_directory value="$PROJECT_DIR$/" />
-      <parameters value="-bigip-conf-dir=config -bigip-insecure=true -bigip-password=nihao666 -bigip-url=192.168.50.75 -bigip-username=admin -kubeconfig=$USER_HOME$/.kube/config" />
+      <parameters value="-bigip-conf-dir=config -bigip-insecure=true -bigip-password=nihao666 -bigip-url=192.168.50.75 -bigip-username=admin -kubeconfig=$USER_HOME$/.kube/config -v=8" />
       <kind value="FILE" />
       <package value="github.com/kubeovn/ces-controller" />
       <directory value="$PROJECT_DIR$/" />
@@ -341,9 +350,9 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Build.ces-controller" />
         <item itemvalue="Go Test.TestMockExtenalService in github.com/kubeovn/ces-controller/pkg/as3" />
         <item itemvalue="Go Test.TestLogLevel in github.com/kubeovn/ces-controller/pkg/as3" />
-        <item itemvalue="Go Build.ces-controller" />
         <item itemvalue="Go Test.TestMockClusteEgressRule in github.com/kubeovn/ces-controller/pkg/as3 (1)" />
         <item itemvalue="Go Test.TestRomteLog in github.com/kubeovn/ces-controller/pkg/as3" />
       </list>
@@ -480,6 +489,16 @@
           <url>file://$PROJECT_DIR$/vendor/k8s.io/client-go/rest/watch/decoder.go</url>
           <line>63</line>
           <option name="timeStamp" value="111" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go</url>
+          <line>83</line>
+          <option name="timeStamp" value="123" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go</url>
+          <line>99</line>
+          <option name="timeStamp" value="125" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
