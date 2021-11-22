@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="" />
+    <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils_test.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -77,7 +80,12 @@
     <setting file="file://$PROJECT_DIR$/config/crd/v1alpha1_externalservices.yaml" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/dist/Dockerfile" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/config/crd/v1alpha1_clusteregressrules.yaml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/hack/update-codegen.sh" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/hack/verify-codegen.sh" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Makefile" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/vendor/k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/helpers.go" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/pkg/controller/process_extenalservice.go" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/pkg/controller/process_namespaceegressrule.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/config/ces-conf.yaml" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/pkg/controller/process_endpoint.go" root0="FORCE_HIGHLIGHTING" />

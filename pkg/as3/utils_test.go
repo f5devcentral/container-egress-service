@@ -2528,6 +2528,22 @@ func TestMockExtenalService(t *testing.T){
 			},
 		},
 	}
+	cgRuleList = kubeovnv1alpha1.ClusterEgressRuleList{
+		Items: []kubeovnv1alpha1.ClusterEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test1",
+				},
+				Spec: kubeovnv1alpha1.ClusterEgressRuleSpec{
+					Action: "accept",
+					ExternalServices: []string{
+						"exsvc1",
+						"exsvc2",
+					},
+				},
+			},
+		},
+	}
 	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
 	adc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
@@ -2563,6 +2579,90 @@ func TestMockExtenalService(t *testing.T){
 	deltaAdc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
 	body = fullResource(DefaultPartition, false, adc, deltaAdc)
+	printObj(body)
+
+	//one rule , mult exsvc, delete one exsvc
+	printObj("one rule , mult exsvc, delete one exsvc")
+	exsvcList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc1",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.1.1",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "udp-81",
+							Protocol: "udp",
+							Port: "81-91",
+							Bandwidth: "bwc-2mbps-irule",
+						},{
+							Name: "tcp-443",
+							Protocol: "tcp",
+							Port: "443",
+							Bandwidth: "bwc-1mbps-irule",
+						},
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc2",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.2.2",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "udp-9090",
+							Protocol: "udp",
+							Port: "9090",
+							Bandwidth: "bwc-2mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList,nil, nil, tntcfg)
+	adc, deltaAdc = as3ADC{}, as3ADC{}
+	as3post.generateAS3ResourceDeclaration(adc)
+	printObj(adc)
+	exsvcList = kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc2",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.2.2",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "udp-9090",
+							Protocol: "udp",
+							Port: "9090",
+							Bandwidth: "bwc-2mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList,nil, nil, tntcfg)
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
+	printObj(deltaAdc)
+
+	body = fullResource(DefaultPartition, true, adc, deltaAdc)
 	printObj(body)
 }
 
