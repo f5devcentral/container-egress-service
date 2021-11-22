@@ -18,6 +18,7 @@ package controller
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -281,22 +282,11 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldRule.ResourceVersion == newRule.ResourceVersion {
 			return false
 		}
-
 		if oldRule.Spec.Action != newRule.Spec.Action {
 			return true
 		}
-
-		for _, oldv := range oldRule.Spec.ExternalServices {
-			find := false
-			for _, newv := range newRule.Spec.ExternalServices {
-				if oldv == newv {
-					find = true
-					break
-				}
-			}
-			if !find {
-				return true
-			}
+		if !reflect.DeepEqual(oldRule.Spec.ExternalServices, newRule.Spec.ExternalServices){
+			return true
 		}
 	case *kubeovn.NamespaceEgressRule:
 		oldNsRule := old.(*kubeovn.NamespaceEgressRule)
@@ -313,18 +303,8 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldNsRule.Spec.Action != newNsRule.Spec.Action {
 			return true
 		}
-
-		for _, oldv := range oldNsRule.Spec.ExternalServices {
-			find := false
-			for _, newv := range newNsRule.Spec.ExternalServices {
-				if oldv == newv {
-					find = true
-					break
-				}
-			}
-			if !find {
-				return true
-			}
+		if !reflect.DeepEqual(oldNsRule.Spec.ExternalServices, newNsRule.Spec.ExternalServices){
+			return true
 		}
 	case *kubeovn.ServiceEgressRule:
 		oldSvcRule := old.(*kubeovn.ServiceEgressRule)
@@ -337,26 +317,14 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldSvcRule.ResourceVersion == newSvcRule.ResourceVersion {
 			return false
 		}
-
 		if oldSvcRule.Spec.Action != newSvcRule.Spec.Action {
 			return true
 		}
-
-		if oldSvcRule.Spec.Service != newSvcRule.Spec.Service {
+		if oldSvcRule.Spec.Service != oldSvcRule.Spec.Service{
 			return true
 		}
-
-		for _, oldv := range oldSvcRule.Spec.ExternalServices {
-			find := false
-			for _, newv := range newSvcRule.Spec.ExternalServices {
-				if oldv == newv {
-					find = true
-					break
-				}
-			}
-			if !find {
-				return true
-			}
+		if !reflect.DeepEqual(oldSvcRule.Spec.ExternalServices, newSvcRule.Spec.ExternalServices){
+			return true
 		}
 	case *kubeovn.ExternalService:
 		oldExt := old.(*kubeovn.ExternalService)
@@ -364,31 +332,15 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldExt.ResourceVersion == newExt.ResourceVersion {
 			return false
 		}
-
-		for _, oldv := range oldExt.Spec.Addresses {
-			find := false
-			for _, newv := range newExt.Spec.Addresses {
-				if oldv == newv {
-					find = true
-					break
-				}
-			}
-			if !find {
-				return true
-			}
+		if oldExt.ResourceVersion == newExt.ResourceVersion {
+			return true
+		}
+		if !reflect.DeepEqual(oldExt.Spec.Addresses, newExt.Spec.Addresses){
+			return true
 		}
 
-		for _, oldv := range oldExt.Spec.Ports {
-			find := false
-			for _, newv := range newExt.Spec.Ports {
-				if oldv == newv {
-					find = true
-					break
-				}
-			}
-			if !find {
-				return true
-			}
+		if !reflect.DeepEqual(oldExt.Spec.Ports, newExt.Spec.Ports){
+			return true
 		}
 	case *corev1.Endpoints:
 		oldEp := old.(*corev1.Endpoints)
@@ -409,25 +361,9 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if len(oldEp.Subsets) == 0 && len(newEp.Subsets) > 0 {
 			return true
 		}
-
-		return true
-		//for _, oldv := range oldEp.Subsets {
-		//	for _, newv := range newEp.Subsets {
-		//		for _, oldAdd := range oldv.Addresses {
-		//			isFind := false
-		//			for _, newAdd := range newv.Addresses {
-		//				if oldAdd.IP == newAdd.IP {
-		//					isFind = true
-		//					break
-		//				}
-		//			}
-		//			if !isFind {
-		//				return true
-		//			}
-		//		}
-		//
-		//	}
-		//}
+		if !reflect.DeepEqual(oldEp.Subsets, newEp.Subsets){
+			return true
+		}
 	}
 	return false
 }
