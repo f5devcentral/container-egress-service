@@ -12,7 +12,7 @@ iRule:
 tenant:
   ##common partiton config, init AS3 needs
   - name: "Common"
-    namespaces: "default,kube-system"
+    namespaces: "default,dwb-test1,dwb-test"
     virtualService:
       template: ''
       virtualAddresses:

@@ -3,7 +3,13 @@
   <component name="ChangeListManager">
     <list default="true" id="2c913d43-f1a1-4000-8747-3573c10652bf" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/ces-conf.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/config/ces-conf.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/request.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/request.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/as3/utils_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/as3/utils_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pkg/controller/controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/controller.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/controller/process_endpoint.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/controller/process_endpoint.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,7 +61,7 @@
       <replace>kubeovnv1alpha1</replace>
     </replaceStrings>
   </component>
-  <component name="GOROOT" url="file:///usr/local/Cellar/go/1.17.1/libexec" />
+  <component name="GOROOT" url="file:///usr/local/Cellar/go@1.15/1.15.15/libexec" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -278,11 +284,23 @@
     <configuration name="ces-controller" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true">
       <module name="ces-controller" />
       <working_directory value="$PROJECT_DIR$/" />
-      <parameters value="-bigip-conf-dir=config -bigip-insecure=true -bigip-password=nihao666 -bigip-url=192.168.50.75 -bigip-username=admin -kubeconfig=$USER_HOME$/.kube/config -v=3" />
+      <parameters value="-bigip-conf-dir=config -bigip-insecure=true -bigip-password=nihao666 -bigip-url=192.168.50.75 -bigip-username=admin -kubeconfig=$USER_HOME$/.kube/config" />
       <kind value="FILE" />
       <package value="github.com/kubeovn/ces-controller" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/cmd/ces/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestIsSupportRouteDomain in github.com/kubeovn/ces-controller/pkg/as3" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="ces-controller" />
+      <working_directory value="$PROJECT_DIR$/pkg/as3" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/kubeovn/ces-controller/pkg/as3" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestIsSupportRouteDomain\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestLogLevel in github.com/kubeovn/ces-controller/pkg/as3" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -297,18 +315,6 @@
       <pattern value="^\QTestLogLevel\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestMockClusteEgressRule in github.com/kubeovn/ces-controller/pkg/as3 (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="ces-controller" />
-      <working_directory value="$PROJECT_DIR$/pkg/as3" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/kubeovn/ces-controller/pkg/as3" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestMockClusteEgressRule\E$" />
-      <method v="2" />
-    </configuration>
     <configuration name="TestMockExtenalService in github.com/kubeovn/ces-controller/pkg/as3" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="ces-controller" />
       <working_directory value="$PROJECT_DIR$/pkg/as3" />
@@ -321,31 +327,32 @@
       <pattern value="^\QTestMockExtenalService\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRomteLog in github.com/kubeovn/ces-controller/pkg/as3" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestSupportRouteDomain in github.com/kubeovn/ces-controller/pkg/as3" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="ces-controller" />
       <working_directory value="$PROJECT_DIR$/pkg/as3" />
+      <root_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
       <package value="github.com/kubeovn/ces-controller/pkg/as3" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^TestRomteLog$" />
+      <pattern value="^\QTestSupportRouteDomain\E$" />
       <method v="2" />
     </configuration>
     <list>
       <item itemvalue="Go Build.ces-controller" />
-      <item itemvalue="Go Test.TestRomteLog in github.com/kubeovn/ces-controller/pkg/as3" />
-      <item itemvalue="Go Test.TestMockClusteEgressRule in github.com/kubeovn/ces-controller/pkg/as3 (1)" />
       <item itemvalue="Go Test.TestMockExtenalService in github.com/kubeovn/ces-controller/pkg/as3" />
       <item itemvalue="Go Test.TestLogLevel in github.com/kubeovn/ces-controller/pkg/as3" />
+      <item itemvalue="Go Test.TestIsSupportRouteDomain in github.com/kubeovn/ces-controller/pkg/as3" />
+      <item itemvalue="Go Test.TestSupportRouteDomain in github.com/kubeovn/ces-controller/pkg/as3" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Go Build.ces-controller" />
+        <item itemvalue="Go Test.TestSupportRouteDomain in github.com/kubeovn/ces-controller/pkg/as3" />
+        <item itemvalue="Go Test.TestIsSupportRouteDomain in github.com/kubeovn/ces-controller/pkg/as3" />
         <item itemvalue="Go Test.TestMockExtenalService in github.com/kubeovn/ces-controller/pkg/as3" />
         <item itemvalue="Go Test.TestLogLevel in github.com/kubeovn/ces-controller/pkg/as3" />
-        <item itemvalue="Go Test.TestMockClusteEgressRule in github.com/kubeovn/ces-controller/pkg/as3 (1)" />
-        <item itemvalue="Go Test.TestRomteLog in github.com/kubeovn/ces-controller/pkg/as3" />
       </list>
     </recent_temporary>
   </component>
@@ -481,21 +488,12 @@
           <line>63</line>
           <option name="timeStamp" value="111" />
         </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go</url>
-          <line>83</line>
-          <option name="timeStamp" value="123" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/pkg/controller/process_clusteregressrule.go</url>
-          <line>99</line>
-          <option name="timeStamp" value="125" />
-        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
     <watches-manager>
       <configuration name="GoApplicationRunConfiguration">
         <watch expression="*(*&quot;string&quot;)(824634240864)" />
+        <watch expression="" />
       </configuration>
     </watches-manager>
   </component>

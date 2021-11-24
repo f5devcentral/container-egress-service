@@ -59,13 +59,11 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
 		return nil
 	}
-
 	nsConfig := as3.GetTenantConfigForNamespace(namespace)
 	if nsConfig == nil {
 		klog.Infof("namespace[%s] not in watch range ", namespace)
 		return nil
 	}
-
 	ep, err := c.endpointsLister.Endpoints(namespace).Get(name)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -75,22 +73,17 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 		klog.Errorf("failed to get endpoint [%s/%s],due to: %v", ep.Namespace, ep.Name, err)
 		return err
 	}
-
 	defer func() {
 		if err != nil {
 			c.recorder.Event(ep, corev1.EventTypeWarning, err.Error(), MessageResourceFailedSynced)
 		}
 	}()
-
 	as3Rules, err := c.seviceEgressRuleLister.ServiceEgressRules(namespace).List(labels.Everything())
-
 	if err != nil {
 		klog.Errorf("failed to list BIG-IP service egress rules: %v", err)
 		return err
 	}
-
 	nameInRule := name
-
 	for _, rule := range as3Rules {
 		if rule.Spec.Service == nameInRule {
 			//Due to frequent ip update,so BIG-IP native interface is used
@@ -104,7 +97,6 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 					patchItems.Addresses = append(patchItems.Addresses, patchItem)
 				}
 			}
-
 			if len(patchItems.Addresses) == 0 {
 				err = fmt.Errorf("endpoint[%s] subsets.addresses is nil", key)
 				klog.Error(err)
@@ -112,7 +104,7 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 			}
 			klog.Infof("===============================>start sync endpoints[%s/%s]", namespace, name)
 			c.as3Client.UpdateBigIPSourceAddress(patchItems, nsConfig, namespace, rule.Name, ep.Name)
-			defer klog.Infof("===============================>end sync endpoints[%s/%s]", namespace, name)
+			klog.Infof("===============================>end sync endpoints[%s/%s]", namespace, name)
 			break
 		}
 	}

@@ -78,12 +78,11 @@ func (ac as3) initDefault() {
 }
 
 func newAs3Obj(partition string, shareApplication interface{}) interface{} {
-	tenant := as3Tenant{
-		SharedKey: shareApplication,
-		ClassKey:  TenantValue,
-	}
+	tenant := as3Tenant{}
 	ac := initDefaultAS3()
 	adc := ac[DeclarationKey].(as3ADC)
+	tenant.initDefault(partition)
+	tenant[SharedKey] = shareApplication
 	adc[partition] = tenant
 	ac[DeclarationKey] = adc
 	return ac
@@ -348,56 +347,51 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 // Create AS3 Service for Route
 func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 	svcPolicyPath := getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3PolicyAttr("svc", ac.tenantConfig.RouteDomain.Name))
+	enableSecurityLog := true
+	if reflect.DeepEqual(getLogPool(), LogPool{}){
+		enableSecurityLog = false
+	}
 	if ac.tenantConfig.VirtualService.Template != "" {
 		vsTemplate := strings.ReplaceAll(ac.tenantConfig.VirtualService.Template, "k8s", GetCluster())
 		vsTemplate = strings.ReplaceAll(vsTemplate, "{{tenant}}", ac.tenantConfig.Name)
 
 		vs := map[string]interface{}{}
 		err := validateJSONAndFetchObject(vsTemplate, &vs)
-		if err != nil {
-			//error not nil, set default
-			sharedApp[getAs3VSAttr()] = &VirtualServer{
-				Layer4:                 "any",
-				TranslateServerAddress: false,
-				TranslateServerPort:    false,
-				VirtualAddresses:       []string{"0.0.0.0"},
-				PolicyFirewallEnforced: Use{
-					svcPolicyPath,
-				},
-				SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, "k8s_afm_hsl_log_profile")}},
-				VirtualPort:         0,
-				Snat:                "auto",
-				Class:               ClassVirtualServerL4,
-				Pool:                getAs3GwPoolAttr(),
+		if err == nil {
+			vs[PolicyFirewallEnforcedKey] = Use{
+				svcPolicyPath,
 			}
+			vs["pool"] = getAs3GwPoolAttr()
+			if !enableSecurityLog{
+				delete(vs, "securityLogProfiles")
+			}
+			sharedApp[getAs3VSAttr()] = vs
 			return
 		}
-		vs[PolicyFirewallEnforcedKey] = Use{
-			svcPolicyPath,
-		}
-		vs["pool"] = getAs3GwPoolAttr()
-		sharedApp[getAs3VSAttr()] = vs
-
-	} else {
-		VirtualAddresses := ac.tenantConfig.VirtualService.VirtualAddresses
-		if len(ac.tenantConfig.VirtualService.VirtualAddresses) == 0 {
-			VirtualAddresses = []string{"0.0.0.0"}
-		}
-		sharedApp[getAs3VSAttr()] = &VirtualServer{
-			Layer4:                 "any",
-			TranslateServerAddress: false,
-			TranslateServerPort:    false,
-			VirtualAddresses:       VirtualAddresses,
-			PolicyFirewallEnforced: Use{
-				svcPolicyPath,
-			},
-			SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, "k8s_afm_hsl_log_profile")}},
-			VirtualPort:         0,
-			Snat:                "auto",
-			Class:               ClassVirtualServerL4,
-			Pool:                getAs3GwPoolAttr(),
-		}
 	}
+	//error not nil or template is '', set default
+	VirtualAddresses := ac.tenantConfig.VirtualService.VirtualAddresses
+	if len(ac.tenantConfig.VirtualService.VirtualAddresses) == 0 {
+		VirtualAddresses = []string{"0.0.0.0"}
+	}
+	defaultVs := &VirtualServer{
+		Layer4:                 "any",
+		TranslateServerAddress: false,
+		TranslateServerPort:    false,
+		VirtualAddresses:       VirtualAddresses,
+		PolicyFirewallEnforced: Use{
+			svcPolicyPath,
+		},
+		SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, "k8s_afm_hsl_log_profile")}},
+		VirtualPort:         0,
+		Snat:                "auto",
+		Class:               ClassVirtualServerL4,
+		Pool:                getAs3GwPoolAttr(),
+	}
+	if !enableSecurityLog{
+		defaultVs.SecurityLogProfiles = []Use{}
+	}
+	sharedApp[getAs3VSAttr()] = defaultVs
 }
 
 func (adc as3ADC) initDefault(partition string) {
@@ -434,7 +428,7 @@ func (t as3Tenant) initDefault(partition string) {
 	app := as3Application{}
 	app.initDefault(partition)
 	t[ClassKey] = ClassTenant
-	if partition != DefaultPartition {
+	if IsSupportRouteDomain() && partition != DefaultPartition{
 		t[DefaultRouteDomainKey] = tntcfg.RouteDomain.Id
 	}
 	t[SharedKey] = app
@@ -850,7 +844,11 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 	if src == nil && !isDelete {
 		return newAs3Obj(partition, delta)
 	}
-	srcApp, deltaApp := map[string]interface{}{}, map[string]interface{}{}
+	//originApp: save old as3
+	originApp, srcApp, deltaApp := map[string]interface{}{}, map[string]interface{}{}, map[string]interface{}{}
+	if err := validateJSONAndFetchObject(src, &originApp); err != nil{
+		return nil
+	}
 	if err := validateJSONAndFetchObject(src, &srcApp); err != nil {
 		return nil
 	}
@@ -859,7 +857,6 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 	}
 	for deltaKey, deltaValue := range deltaApp {
 		if srcValue, ok := srcApp[deltaKey]; ok {
-
 			child, ok := srcValue.(map[string]interface{})
 			if !ok {
 				continue
@@ -888,6 +885,9 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 	}
 
 	clearUpUnreferencePolicy(srcApp)
+	if !isDiff(originApp, srcApp){
+		return nil
+	}
 	return newAs3Obj(partition, srcApp)
 }
 
@@ -961,6 +961,15 @@ func clearUpUnreferencePolicy(shareApp map[string]interface{}){
 						flag1[use] = true
 					}
 				}
+				//source address
+				if src, ok := rule.(map[string]interface{})["source"].(map[string]interface{}); ok{
+					if addressList, ok := src["addressLists"]; ok {
+						for _, uses := range addressList.([]interface{}) {
+							use := getOriginAttrOfUsePath(uses.(map[string]interface{})["use"].(string))
+							flag1[use] = true
+						}
+					}
+				}
 			}
 		case ClassFirewallAddressList, ClassFirewallPortList:
 			flag2[key] = true
@@ -973,8 +982,24 @@ func clearUpUnreferencePolicy(shareApp map[string]interface{}){
 	}
 }
 
-func translateFWRType(obj interface{}, ty string) interface{}{
-	return nil
+func isDiff(old, new interface{}) bool{
+	oldObj, newObj := map[string]interface{}{}, map[string]interface{}{}
+	if err := validateJSONAndFetchObject(old, &oldObj); err != nil{
+		return true
+	}
+	if err := validateJSONAndFetchObject(new, &newObj); err != nil{
+		return true
+	}
+	for k, v := range newObj{
+		v1, ok := oldObj[k]
+		if !ok{
+			return true
+		}
+		if !reflect.DeepEqual(v, v1){
+			return true
+		}
+	}
+	return false
 }
 
 

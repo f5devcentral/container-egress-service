@@ -14,7 +14,9 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 	clusterEgressList *v1alpha1.ClusterEgressRuleList, externalServiceList *v1alpha1.ExternalServiceList,
 	endpointList *corev1.EndpointsList, namespaceList *corev1.NamespaceList, tenantConfig *TenantConfig,
 	ty string, isDelete bool) error {
-
+	//Full synchronization will cause the latest data to be updated
+	c.Lock()
+	defer c.Unlock()
 	as3PostParam := newAs3Post(serviceEgressList, namespaceEgressList, clusterEgressList, externalServiceList, endpointList,
 		namespaceList, tenantConfig)
 	deltaAdc := as3ADC{}
@@ -34,6 +36,10 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 		return err
 	}
 	reqBody := fullResource(partition, isDelete, srcAdc, deltaAdc)
+	if reqBody == nil{
+		klog.Info("as3 is not update")
+		return nil
+	}
 	err = c.post(reqBody, partition)
 	if err != nil {
 		err = fmt.Errorf("failed to request AS3 POST API: %v", err)
@@ -144,6 +150,8 @@ func (c *Client) frequency() {
 			}
 			if now.Sub(v) < 2*60*time.Second {
 				times += 1
+			}else{
+				return true
 			}
 		}
 		return false

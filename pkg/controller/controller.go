@@ -353,13 +353,11 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 			klog.V(5).Infof("namespace[%s] not in watch range ", oldEp.Namespace)
 			return false
 		}
-
-		//if oldEp.ResourceVersion == newEp.ResourceVersion {
-		//	return false
-		//}
-
-		if len(oldEp.Subsets) == 0 && len(newEp.Subsets) > 0 {
-			return true
+		if oldEp.ResourceVersion == newEp.ResourceVersion {
+			return false
+		}
+		if len(newEp.Subsets) == 0{
+			return false
 		}
 		if !reflect.DeepEqual(oldEp.Subsets, newEp.Subsets){
 			return true

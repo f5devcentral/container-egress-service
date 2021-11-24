@@ -74,8 +74,6 @@ func (c *Client) post(data interface{}, tenants ...string) error {
 	}
 	klog.V(3).Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
 	req.SetBasicAuth(c.username, c.password)
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -105,8 +103,6 @@ func (c *Client) Get(partition string) (string, error) {
 		return "", err
 	}
 	req.SetBasicAuth(c.username, c.password)
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -144,9 +140,6 @@ func (c *Client) PostRaw(data []byte) error {
 	}
 	klog.Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
 	req.SetBasicAuth(c.username, c.password)
-
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -186,8 +179,6 @@ func (c *Client) patch(patchItems ...PatchItem) error {
 	}
 	klog.Infof("request: method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(b))
 	req.SetBasicAuth(c.username, c.password)
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -243,8 +234,6 @@ func (c *Client) patchF5Reource(obj interface{}, url string) error {
 	}
 	klog.V(3).Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
 	req.SetBasicAuth(c.username, c.password)
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -278,8 +267,6 @@ func (c *Client) getF5Resource(url string) (response map[string]interface{}, err
 		return
 	}
 	req.SetBasicAuth(c.username, c.password)
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -315,8 +302,6 @@ func (c *Client) postF5Resouce(obj interface{}, url string) error {
 	}
 	klog.V(3).Infof("method = %s, url = %s, body = %s", req.Method, req.URL.String(), string(data))
 	req.SetBasicAuth(c.username, c.password)
-	c.Lock()
-	defer c.Unlock()
 
 	resp, err := c.Do(req)
 	if err != nil {

@@ -2849,3 +2849,110 @@ func TestLogLevel(t *testing.T){
 	klog.V(4).Infof("high level log")
 	klog.Errorf("error log")
 }
+
+
+func TestSupportRouteDomain(t *testing.T) {
+
+	svcgrList := kubeovnv1alpha1.ServiceEgressRuleList{
+		Items: []kubeovnv1alpha1.ServiceEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "svcgr",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ServiceEgressRuleSpec{
+					Action: "accept",
+					Service: "test",
+					ExternalServices: []string{"exsvc"},
+				},
+			},
+		},
+	}
+	exsvcList := kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.2.2",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "udp-9090",
+							Protocol: "udp",
+							Port: "9090",
+							Bandwidth: "bwc-2mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	as3cfg := As3Config{
+		ClusterName:          "cck8s",
+		IsSupportRouteDomain: true,
+		LoggingEnabled: false,
+		Tenant: []TenantConfig{
+			{
+				Name: "Common",
+				RouteDomain: RouteDomain{
+					Name: "0",
+					Id:   0,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.1"},
+				},
+			},
+			{
+				Name: "dwb-test",
+				Namespaces: "dwb-test",
+				RouteDomain: RouteDomain{
+					Name: "rd1",
+					Id:   1,
+				},
+				VirtualService: VirtualService{
+					VirtualAddresses: []string{"2.2.2.2"},
+				},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.2"},
+				},
+			},
+		},
+	}
+
+	epList := corev1.EndpointsList{
+		Items: []corev1.Endpoints{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Namespace: "dwb-test",
+				},
+				Subsets: []corev1.EndpointSubset{
+					{
+						Addresses: []corev1.EndpointAddress{
+							{
+								IP: "1.1.1.1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg, "dwb-test")
+	tntcfg := GetTenantConfigForParttition("dwb-test")
+	//as3 := initDefaultAS3()
+	adc := as3ADC{}
+	printObj(adc)
+	post := newAs3Post(&svcgrList, nil, nil, &exsvcList, &epList, nil, tntcfg)
+	delta := as3ADC{}
+	post.generateAS3ResourceDeclaration(delta)
+	printObj(delta)
+	body := fullResource("dwb-test", false, adc, delta)
+	printObj(body)
+}
