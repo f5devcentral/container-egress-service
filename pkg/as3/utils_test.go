@@ -1,34 +1,16 @@
 package as3
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"k8s.io/klog/v2"
-	"net/http"
 	"testing"
 
 	kubeovnv1alpha1 "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func test_client() Client {
-	client := Client{
-		password: "nihao666",
-		username: "admin",
-		host:     "https://192.168.50.75",
-		url:      "",
-		Client:   http.DefaultClient,
-	}
-	client.Client.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	return client
-}
 
 func TestGetAs3ADC(t *testing.T) {
 	aa := map[string]interface{}{
