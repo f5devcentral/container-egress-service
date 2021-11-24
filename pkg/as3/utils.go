@@ -885,7 +885,7 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 	}
 
 	clearUpUnreferencePolicy(srcApp)
-	if !isDiff(originApp, srcApp){
+	if !isDiff(originApp, srcApp) && !isDelete{
 		return nil
 	}
 	return newAs3Obj(partition, srcApp)
