@@ -276,6 +276,14 @@ rules:
       - get
       - update
   - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - ""
     resources:
       - events

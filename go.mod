@@ -1,6 +1,6 @@
 module github.com/kubeovn/ces-controller
 
-go 1.16
+go 1.15
 
 require (
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
