@@ -2389,7 +2389,6 @@ func TestMockExtenalService(t *testing.T){
 	as3cfg := As3Config{
 		ClusterName:          "k8s",
 		IsSupportRouteDomain: false,
-		LoggingEnabled: false,
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",
@@ -2844,6 +2843,7 @@ func TestSupportRouteDomain(t *testing.T) {
 				},
 				Spec: kubeovnv1alpha1.ServiceEgressRuleSpec{
 					Action: "accept",
+					Logging: true,
 					Service: "test",
 					ExternalServices: []string{"exsvc"},
 				},
@@ -2877,7 +2877,6 @@ func TestSupportRouteDomain(t *testing.T) {
 	as3cfg := As3Config{
 		ClusterName:          "cck8s",
 		IsSupportRouteDomain: true,
-		LoggingEnabled: false,
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",

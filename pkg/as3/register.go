@@ -14,7 +14,6 @@ const (
 	partitionCacheKey       = "__PARTITION_CACHE_KEY__"
 	masterClusterKey        = "__MASTER_CLUSTER__"
 	as3IRulesListKey        = "__AS3_IRULES_LIST_KEY__"
-	LoggingEnabledKey        = "__LOGGING_ENABLED_KEY__"
 	clusterSvcExtNamespaceKey         = "__CLUSTER_SVC_EXT_NAMESPACE__"
 )
 

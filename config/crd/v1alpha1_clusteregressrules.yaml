@@ -42,6 +42,8 @@ spec:
                     - drop
                     - accept-decisively
                     - reject
+                logging:
+                  type: boolean
                 externalServices:
                   type: array
                   items:

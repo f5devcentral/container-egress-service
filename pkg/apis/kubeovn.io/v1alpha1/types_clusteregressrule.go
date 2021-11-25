@@ -17,6 +17,7 @@ type ClusterEgressRule struct {
 // ClusterEgressRuleSpec is the spec for an ClusterEgressRule resource
 type ClusterEgressRuleSpec struct {
 	Action           string   `json:"action"`
+	Logging          bool     `json:"logging,omitempty"`
 	ExternalServices []string `json:"externalServices"`
 }
 

@@ -122,12 +122,14 @@ type (
 		MasterCluster        string         `mapstructure:"master_cluster"`
 		IsSupportRouteDomain bool           `mapstructure:"isSupportRouteDomain"`
 		IRule                []string       `mapstructure:"iRule"`
-		LoggingEnabled       bool           `mapstructure:"loggingEnabled"`
 		Tenant               []TenantConfig `mapstructure:"tenant"`
 		LogPool              LogPool        `mapstructure:"logPool"`
 	}
 
 	LogPool struct {
+		//Whether to configure logging profile
+		LoggingEnabled  bool     `mapstructure:"loggingEnabled"`
+		//Whether to open remote log
 		EnableRemoteLog bool     `mapstructure:"enableRemoteLog"`
 		Template        string   `mapstructure:"template"`
 		ServerAddresses []string `mapstructure:"serverAddresses"`
@@ -202,6 +204,7 @@ type (
 		name      string
 		namespace string
 		action    string
+		logging   bool
 		srcAddr   []string
 		//ep name
 		epName string

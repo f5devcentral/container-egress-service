@@ -135,6 +135,7 @@ tenant:
       serverAddresses:
         - "10.16.10.23"
 logPool:
+  loggingEnabled: true
   enableRemoteLog: false
   serverAddresses:
     - "1.2.3.4"
@@ -227,6 +228,7 @@ tenant：
    gwPool： ####gateway
      serverAddresses: gwpool中的参数值，gateway的ip列表
    logPool：##日志
+     loggingEnabled： 是否配置log profile
      enableRemoteLog： 是否开启远程日志
      serverAddresses： pool中的ip列表
      template：日志配置模板。可参考上面实例
