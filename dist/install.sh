@@ -48,6 +48,8 @@ spec:
           properties:
             spec:
               type: object
+              required:
+                - addresses
               properties:
                 addresses:
                   type: array
@@ -111,6 +113,8 @@ spec:
                     - drop
                     - accept-decisively
                     - reject
+                logging:
+                  type: boolean
                 externalServices:
                   type: array
                   items:
@@ -165,6 +169,8 @@ spec:
                     - drop
                     - accept-decisively
                     - reject
+                logging:
+                  type: boolean
                 externalServices:
                   type: array
                   items:
@@ -220,6 +226,8 @@ spec:
                     - drop
                     - accept-decisively
                     - reject
+                logging:
+                  type: boolean
                 service:
                   type: string
                 externalServices:
@@ -270,8 +278,6 @@ rules:
       - ""
     resources:
       - configmaps
-    resourceNames:
-      - ces-controller-configmap
     verbs:
       - get
       - update
@@ -282,7 +288,6 @@ rules:
     verbs:
       - get
       - list
-      - watch
   - apiGroups:
       - ""
     resources:
@@ -345,6 +350,7 @@ data:
       - bwc-2mbps-irule
       - bwc-3mbps-irule
     logPool:
+      loggingEnabled: true
       enableRemoteLog: false
       serverAddresses:
         - "1.2.3.4"
