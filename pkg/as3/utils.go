@@ -134,7 +134,8 @@ func (ac *as3Post) newPoliciesDecl(sharedApp as3Application) {
 		if sharedApp[as3PolicyAttr] != nil {
 			policy = sharedApp[as3PolicyAttr].(FirewallPolicy)
 		}
-		policy.Rules = append(policy.Rules, ruleList...)
+		//policy.Rules = append(policy.Rules, ruleList...)
+		policy.Rules = append(ruleList, policy.Rules...)
 		sharedApp[as3PolicyAttr] = policy
 	}
 }
@@ -686,6 +687,9 @@ func getAs3UsePathForNamespace(namespace, attr string) string {
 		partition = DefaultPartition
 	} else {
 		tntcfg := GetTenantConfigForNamespace(namespace)
+		if tntcfg == nil{
+			panic(fmt.Sprintf("Get the current rd configuration of namespace[%s] as nil", namespace))
+		}
 		partition = tntcfg.Name
 	}
 
@@ -929,6 +933,16 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 		}
 		if !isExist && !isDelete {
 			srcPolicy.Rules = append(srcPolicy.Rules, deltaRule)
+		}
+	}
+	//deny all needs to be at the end
+	last := len(srcPolicy.Rules)-1
+	for i := last; i >=0; i-- {
+		if strings.Contains(srcPolicy.Rules[i].Use, getAllDenyRuleListAttr()){
+			denyAllRule := srcPolicy.Rules[i].Use
+			srcPolicy.Rules[i].Use = srcPolicy.Rules[last].Use
+			srcPolicy.Rules[last].Use = denyAllRule
+			break
 		}
 	}
 	return srcPolicy

@@ -194,13 +194,6 @@ func getIRules() []string {
 	return irules
 }
 
-func isNotFound(err error) bool {
-	if strings.Contains(err.Error(), "status code 404") {
-		return true
-	}
-	return false
-}
-
 func getSchemaVersion() string {
 	v := getValue(schemaVersionKey)
 	if v == nil {

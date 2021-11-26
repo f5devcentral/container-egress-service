@@ -24,11 +24,7 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 	partition := tenantConfig.Name
 	adcStr, err := c.Get(partition)
 	if err != nil {
-		if isNotFound(err){
-			adcStr = "{}"
-		}else{
-			return fmt.Errorf("failed to get tenant[%s], error: %v", partition, err)
-		}
+		return fmt.Errorf("failed to get tenant[%s], error: %v", partition, err)
 	}
 	srcAdc := map[string]interface{}{}
 	err = validateJSONAndFetchObject(adcStr, &srcAdc)
