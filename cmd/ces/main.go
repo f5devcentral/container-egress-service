@@ -119,8 +119,8 @@ func main() {
 			klog.Fatalf("failed to parse bool value in configmap[%s]: %v", controller.ControllerConfigmap, err)
 		}
 	}
-
-	err = as3.InitAs3Tenant(as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure), bigipConfDir, initialized, ns)
+	bigIpClient := as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure)
+	err = as3.InitAs3Tenant(bigIpClient, bigipConfDir, initialized, ns)
 	if err != nil {
 		klog.Fatalf("failed to initialize AS3 declaration: %v", err)
 	}
@@ -145,13 +145,13 @@ func main() {
 	serviceEgressRuleInformer := as3InformerFactory.Kubeovn().V1alpha1().ServiceEgressRules()
 
 	controller := controller.NewController(kubeClient, as3Client, endpointsInformer, externalServiceInformer, clusterEgressRuleInformer,
-		namespaceEgressRuleInformer, serviceEgressRuleInformer, as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure))
+		namespaceEgressRuleInformer, serviceEgressRuleInformer, bigIpClient)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
 	kubeInformerFactory.Start(stopCh)
 	as3InformerFactory.Start(stopCh)
-
+	go bigIpClient.Work()
 	if err = controller.Run(stopCh); err != nil {
 		klog.Fatalf("Error running controller: %s", err.Error())
 	}

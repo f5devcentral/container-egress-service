@@ -122,8 +122,7 @@ func (c *Client) UpdateBigIPSourceAddress(addrList BigIpAddressList, tntcfg *Ten
 		err = fmt.Errorf("failed to request BIG-IP Patch API: %v", err)
 		return err
 	}
-
-	go c.frequency()
+	go process()
 	return nil
 }
 
@@ -139,14 +138,8 @@ func (c *Client) frequency() {
 	defer syncFq.lock.Unlock()
 	now := time.Now()
 	isUpdateEpFq := func() bool {
-		times := 0
 		for _, v := range syncFq.updateTimes {
-			if times > 5 {
-				return true
-			}
-			if now.Sub(v) < 2*60*time.Second {
-				times += 1
-			}else{
+			if now.Sub(v) > 2*60*time.Second {
 				return true
 			}
 		}
@@ -159,7 +152,20 @@ func (c *Client) frequency() {
 			return
 		}
 		syncFq.updateTimes = []time.Time{}
-	} else {
-		syncFq.updateTimes = append(syncFq.updateTimes, now)
 	}
+}
+
+func (c *Client)Work(){
+	go func() {
+		for {
+			c.frequency()
+			time.Sleep(30 * time.Second)
+		}
+	}()
+}
+
+func process(){
+	syncFq.lock.Lock()
+	defer syncFq.lock.Unlock()
+	syncFq.updateTimes = append(syncFq.updateTimes, time.Now())
 }
