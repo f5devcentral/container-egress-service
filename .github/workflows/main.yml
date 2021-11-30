@@ -54,7 +54,9 @@ jobs:
      
       # Get docker tag
       - name: Get tag of the image
-        run: imgtag=$(grep  "RELEASE_TAG = "  Makefile |awk '{print $3}')
+        run: |
+          imgtag=$(grep  "RELEASE_TAG = "  Makefile |awk '{print $3}')
+          echo $imgtag
         
       # Docker Push
       - name: Push docker image
