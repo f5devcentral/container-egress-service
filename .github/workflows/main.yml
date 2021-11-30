@@ -10,9 +10,6 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-IMAGE_NAME: myf5/ces-controller
-IMAGE_TAG: test
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
