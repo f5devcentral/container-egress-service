@@ -53,6 +53,7 @@ jobs:
       # Docker login
       - name: docker login
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }}  --password-stdin
+
      
       # Get docker tag
       - name: Compose IMAGE repo and tag Then Push
