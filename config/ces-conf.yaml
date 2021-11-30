@@ -1,10 +1,9 @@
 clusterName: k8s
-isSupportRouteDomain: false
+isSupportRouteDomain: true
 ##AS3 basic configuration
 ##Multi-cluster docking single BIG-IP, controller Common init and remote log
 masterCluster: k8s
 schemaVersion: "3.29.0"
-loggingEnabled: true
 iRule:
   - bwc-1mbps-irule
   - bwc-2mbps-irule
@@ -20,8 +19,8 @@ tenant:
     gwPool:
       serverAddresses:
         - "192.168.10.1"
-  - name: project2
-    namespaces: project2
+  - name: p2
+    namespaces: dwb-test
     routeDomain:
       id: 2
       name: "rd2"
@@ -63,6 +62,7 @@ tenant:
       serverAddresses:
         - "10.16.10.23"
 logPool:
+  loggingEnabled: false
   enableRemoteLog: false
   serverAddresses:
     - "1.2.3.4"

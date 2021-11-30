@@ -134,7 +134,8 @@ func (ac *as3Post) newPoliciesDecl(sharedApp as3Application) {
 		if sharedApp[as3PolicyAttr] != nil {
 			policy = sharedApp[as3PolicyAttr].(FirewallPolicy)
 		}
-		policy.Rules = append(policy.Rules, ruleList...)
+		//policy.Rules = append(policy.Rules, ruleList...)
+		policy.Rules = append(ruleList, policy.Rules...)
 		sharedApp[as3PolicyAttr] = policy
 	}
 }
@@ -166,14 +167,12 @@ func (ac *as3Post) newRulesDecl(sharedApp as3Application) map[string][]Use {
 			for key, ports := range evc.destPorts {
 				as3DestPortAddr := getAs3DestPortAttr(rule.ty, rule.namespace, rule.name, evc.name, key)
 				//app add port
-				if ports.protocol != ""{
+				if ports.protocol != "" {
 					newFirewallPortsList(as3DestPortAddr, ports.ports, sharedApp)
 				}
 				//rule list add rule
 				fwrList.Rules = append(fwrList.Rules, newFirewallRule(key, ports.protocol, rule.namespace, rule.action, evc.name, ports.irule,
-					as3DesAddrAttr,
-					as3DestPortAddr,
-					as3SrcAddrAttr))
+					as3DesAddrAttr, as3DestPortAddr, as3SrcAddrAttr, rule.logging))
 			}
 			//app add rule list
 			ruleListAttr := getAs3RuleListAttr(rule.ty, rule.namespace, rule.name, evc.name)
@@ -205,7 +204,7 @@ func newFirewallRuleList() FirewallRuleList {
 	}
 }
 
-func newFirewallRule(fwrName, protocol, namespace, action, exsvcName, irule, destAddrAttr, destPortAttr, srcAddrAttr string) FirewallRule {
+func newFirewallRule(fwrName, protocol, namespace, action, exsvcName, irule, destAddrAttr, destPortAttr, srcAddrAttr string, logging bool) FirewallRule {
 	rule := FirewallRule{
 		Protocol: protocol,
 		Action:   action,
@@ -222,9 +221,9 @@ func newFirewallRule(fwrName, protocol, namespace, action, exsvcName, irule, des
 				},
 			},
 		},
-		LoggingEnabled: loggingEnabled(),
+		LoggingEnabled: logging,
 	}
-	if protocol == ""{
+	if protocol == "" {
 		rule.Destination.PortLists = nil
 	}
 	if irule != "" {
@@ -295,7 +294,8 @@ func (ac *as3Post) newGWPoolDecl(sharedApp as3Application) {
 
 func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 	log := getLogPool()
-	if log.Template == "" {
+	//Whether to configure logging profile
+	if !isConfigLogProfile() {
 		return
 	}
 	template := strings.ReplaceAll(log.Template, "k8s", GetCluster())
@@ -347,9 +347,10 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 // Create AS3 Service for Route
 func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 	svcPolicyPath := getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3PolicyAttr("svc", ac.tenantConfig.RouteDomain.Name))
-	enableSecurityLog := true
-	if reflect.DeepEqual(getLogPool(), LogPool{}){
-		enableSecurityLog = false
+	enableSecurityLog := false
+	//Whether to configure logging profile
+	if isConfigLogProfile() {
+		enableSecurityLog = true
 	}
 	if ac.tenantConfig.VirtualService.Template != "" {
 		vsTemplate := strings.ReplaceAll(ac.tenantConfig.VirtualService.Template, "k8s", GetCluster())
@@ -362,7 +363,7 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 				svcPolicyPath,
 			}
 			vs["pool"] = getAs3GwPoolAttr()
-			if !enableSecurityLog{
+			if !enableSecurityLog {
 				delete(vs, "securityLogProfiles")
 			}
 			sharedApp[getAs3VSAttr()] = vs
@@ -388,7 +389,7 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 		Class:               ClassVirtualServerL4,
 		Pool:                getAs3GwPoolAttr(),
 	}
-	if !enableSecurityLog{
+	if !enableSecurityLog {
 		defaultVs.SecurityLogProfiles = []Use{}
 	}
 	sharedApp[getAs3VSAttr()] = defaultVs
@@ -428,7 +429,7 @@ func (t as3Tenant) initDefault(partition string) {
 	app := as3Application{}
 	app.initDefault(partition)
 	t[ClassKey] = ClassTenant
-	if IsSupportRouteDomain() && partition != DefaultPartition{
+	if IsSupportRouteDomain() && partition != DefaultPartition {
 		t[DefaultRouteDomainKey] = tntcfg.RouteDomain.Id
 	}
 	t[SharedKey] = app
@@ -475,12 +476,12 @@ func (a as3Application) allDenyRuleList(partition, attr string) {
 		Class: ClassFirewallRuleList,
 		Rules: []FirewallRule{
 			{
-				Protocol:    "any",
-				Name:        DenyAllRuleName,
-				Destination: FirewallDestination{},
-				Source:      FirewallSource{},
-				Action:      "drop",
-				LoggingEnabled: loggingEnabled(),
+				Protocol:       "any",
+				Name:           DenyAllRuleName,
+				Destination:    FirewallDestination{},
+				Source:         FirewallSource{},
+				Action:         "drop",
+				LoggingEnabled: false,
 			},
 		},
 	}
@@ -495,9 +496,10 @@ func (ac *as3Post) dealRule() []ruleData {
 		//clusteregress
 		for _, clsRule := range ac.clusterEgressList.Items {
 			rule := ruleData{
-				ty:     "global",
-				name:   clsRule.Name,
-				action: clsRule.Spec.Action,
+				ty:      "global",
+				name:    clsRule.Name,
+				action:  clsRule.Spec.Action,
+				logging: clsRule.Spec.Logging,
 			}
 			for _, clsExSvcName := range clsRule.Spec.ExternalServices {
 				for _, exsvc := range ac.externalServiceList.Items {
@@ -517,6 +519,7 @@ func (ac *as3Post) dealRule() []ruleData {
 			name:      nsRule.Name,
 			namespace: nsRule.Namespace,
 			action:    nsRule.Spec.Action,
+			logging:   nsRule.Spec.Logging,
 		}
 		for _, clsExSvcName := range nsRule.Spec.ExternalServices {
 			for _, exsvc := range ac.externalServiceList.Items {
@@ -539,6 +542,7 @@ func (ac *as3Post) dealRule() []ruleData {
 			name:      svcRule.Name,
 			namespace: svcRule.Namespace,
 			action:    svcRule.Spec.Action,
+			logging:   svcRule.Spec.Logging,
 		}
 		for _, clsExSvcName := range svcRule.Spec.ExternalServices {
 			for _, exsvc := range ac.externalServiceList.Items {
@@ -573,12 +577,12 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 			ptl := strings.ToLower(pt.Protocol)
 			key := ptl
 			//to diff bwt is processed separately
-			if v, ok := ptlMap[key]; ok{
-				if v.irule != pt.Bandwidth{
+			if v, ok := ptlMap[key]; ok {
+				if v.irule != pt.Bandwidth {
 					key = pt.Name
 				}
-			}else{
-				if pt.Bandwidth != ""{
+			} else {
+				if pt.Bandwidth != "" {
 					key = pt.Name
 				}
 			}
@@ -586,8 +590,8 @@ func dealExsvc(exsvc v1alpha1.ExternalService) *exsvcDate {
 			ports := append(ptlMap[key].ports, strings.Split(pt.Port, ",")...)
 			ptlMap[key] = portIrule{
 				protocol: ptl,
-				irule: pt.Bandwidth,
-				ports: ports,
+				irule:    pt.Bandwidth,
+				ports:    ports,
 			}
 		}
 	}
@@ -683,15 +687,18 @@ func getAs3UsePathForNamespace(namespace, attr string) string {
 		partition = DefaultPartition
 	} else {
 		tntcfg := GetTenantConfigForNamespace(namespace)
+		if tntcfg == nil{
+			panic(fmt.Sprintf("Get the current rd configuration of namespace[%s] as nil", namespace))
+		}
 		partition = tntcfg.Name
 	}
 
 	return fmt.Sprintf("/%s/Shared/%s", partition, attr)
 }
 
-func getOriginAttrOfUsePath(use string)string{
+func getOriginAttrOfUsePath(use string) string {
 	k := strings.Split(use, "/")
-	if len(k) < 4{
+	if len(k) < 4 {
 		return ""
 	}
 	return k[3]
@@ -846,7 +853,7 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 	}
 	//originApp: save old as3
 	originApp, srcApp, deltaApp := map[string]interface{}{}, map[string]interface{}{}, map[string]interface{}{}
-	if err := validateJSONAndFetchObject(src, &originApp); err != nil{
+	if err := validateJSONAndFetchObject(src, &originApp); err != nil {
 		return nil
 	}
 	if err := validateJSONAndFetchObject(src, &srcApp); err != nil {
@@ -883,9 +890,8 @@ func fullResource(partition string, isDelete bool, srcAdc, deltaAdc as3ADC) inte
 			}
 		}
 	}
-
 	clearUpUnreferencePolicy(srcApp)
-	if !isDiff(originApp, srcApp) && !isDelete{
+	if !isDiff(originApp, srcApp) && !isDelete {
 		return nil
 	}
 	return newAs3Obj(partition, srcApp)
@@ -917,7 +923,7 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 				//if find, delete
 				if isDelete {
 					//skip  deny all in svc policy
-					if strings.Contains(deltaRule.Use, getAllDenyRuleListAttr()){
+					if strings.Contains(deltaRule.Use, getAllDenyRuleListAttr()) {
 						continue
 					}
 					srcPolicy.Rules = append(srcPolicy.Rules[:i], srcPolicy.Rules[i+1:]...)
@@ -929,10 +935,20 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 			srcPolicy.Rules = append(srcPolicy.Rules, deltaRule)
 		}
 	}
+	//deny all needs to be at the end
+	last := len(srcPolicy.Rules)-1
+	for i := last; i >=0; i-- {
+		if strings.Contains(srcPolicy.Rules[i].Use, getAllDenyRuleListAttr()){
+			denyAllRule := srcPolicy.Rules[i].Use
+			srcPolicy.Rules[i].Use = srcPolicy.Rules[last].Use
+			srcPolicy.Rules[last].Use = denyAllRule
+			break
+		}
+	}
 	return srcPolicy
 }
 
-func clearUpUnreferencePolicy(shareApp map[string]interface{}){
+func clearUpUnreferencePolicy(shareApp map[string]interface{}) {
 	flag1 := map[string]bool{}
 	flag2 := map[string]bool{}
 	for key, value := range shareApp {
@@ -962,7 +978,7 @@ func clearUpUnreferencePolicy(shareApp map[string]interface{}){
 					}
 				}
 				//source address
-				if src, ok := rule.(map[string]interface{})["source"].(map[string]interface{}); ok{
+				if src, ok := rule.(map[string]interface{})["source"].(map[string]interface{}); ok {
 					if addressList, ok := src["addressLists"]; ok {
 						for _, uses := range addressList.([]interface{}) {
 							use := getOriginAttrOfUsePath(uses.(map[string]interface{})["use"].(string))
@@ -973,6 +989,10 @@ func clearUpUnreferencePolicy(shareApp map[string]interface{}){
 			}
 		case ClassFirewallAddressList, ClassFirewallPortList:
 			flag2[key] = true
+		case ClassSecurityLogProfile, ClassLogPublisher:
+			if !isConfigLogProfile(){
+				delete(shareApp, key)
+			}
 		}
 	}
 	for k, _ := range flag2 {
@@ -982,26 +1002,25 @@ func clearUpUnreferencePolicy(shareApp map[string]interface{}){
 	}
 }
 
-func isDiff(old, new interface{}) bool{
+func isDiff(old, new interface{}) bool {
 	oldObj, newObj := map[string]interface{}{}, map[string]interface{}{}
-	if err := validateJSONAndFetchObject(old, &oldObj); err != nil{
+	if err := validateJSONAndFetchObject(old, &oldObj); err != nil {
 		return true
 	}
-	if err := validateJSONAndFetchObject(new, &newObj); err != nil{
+	if err := validateJSONAndFetchObject(new, &newObj); err != nil {
 		return true
 	}
-	for k, v := range newObj{
+	for k, v := range newObj {
 		v1, ok := oldObj[k]
-		if !ok{
+		if !ok {
 			return true
 		}
-		if !reflect.DeepEqual(v, v1){
+		if !reflect.DeepEqual(v, v1) {
 			return true
 		}
 	}
 	return false
 }
-
 
 func validateJSONAndFetchObject(obj interface{}, jsonObj *map[string]interface{}) error {
 	jsonData := ""

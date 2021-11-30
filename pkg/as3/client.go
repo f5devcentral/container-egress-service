@@ -116,9 +116,13 @@ func (c *Client) Get(partition string) (string, error) {
 		klog.Errorf("Failed to read response body: %v", err)
 		return "", err
 	}
-	//Common tenant isn't exist, body is ""
+	//Common tenant isn't exist, body is "" == (as3 do not set)
 	if err == nil && resp.StatusCode > 199 && resp.StatusCode <299 && string(respBody) == ""{
-		return "", nil
+		return "{}", nil
+	}
+	//specified Tenant(s) not found in declaration
+	if resp.StatusCode == 404{
+		return "{}", nil
 	}
 	var response map[string]interface{}
 	if err = json.Unmarshal(respBody, &response); err != nil {
@@ -216,9 +220,9 @@ func handleResponse(statusCode int, response map[string]interface{}) error {
 		return fmt.Errorf("Big-IP Responded with error code: %v", err["code"])
 	} else {
 		//klog.Errorf("Big-IP Responded with code: %v", response["code"])
-		return fmt.Errorf("Big-IP Responded with code: %v", response["code"])
+		return fmt.Errorf("Big-IP Responded with status code: %v", response["code"])
 	}
-	return fmt.Errorf("AS3 responds with status code %d - %s", statusCode, http.StatusText(statusCode))
+	return fmt.Errorf("AS3 responds with status code: %d - %s", statusCode, http.StatusText(statusCode))
 }
 
 func (c *Client) patchF5Reource(obj interface{}, url string) error {

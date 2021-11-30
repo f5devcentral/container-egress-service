@@ -18,6 +18,7 @@ type NamespaceEgressRule struct {
 type NamespaceEgressRuleSpec struct {
 	Action string `json:"action"`
 	//Subnet           string   `json:"subnet"`
+	Logging          bool     `json:"logging,omitempty"`
 	ExternalServices []string `json:"externalServices"`
 }
 

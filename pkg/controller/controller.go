@@ -285,6 +285,9 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldRule.Spec.Action != newRule.Spec.Action {
 			return true
 		}
+		if oldRule.Spec.Logging !=  newRule.Spec.Logging{
+			return true
+		}
 		if !reflect.DeepEqual(oldRule.Spec.ExternalServices, newRule.Spec.ExternalServices){
 			return true
 		}
@@ -303,6 +306,9 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldNsRule.Spec.Action != newNsRule.Spec.Action {
 			return true
 		}
+		if oldNsRule.Spec.Logging !=  newNsRule.Spec.Logging{
+			return true
+		}
 		if !reflect.DeepEqual(oldNsRule.Spec.ExternalServices, newNsRule.Spec.ExternalServices){
 			return true
 		}
@@ -318,6 +324,9 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 			return false
 		}
 		if oldSvcRule.Spec.Action != newSvcRule.Spec.Action {
+			return true
+		}
+		if oldSvcRule.Spec.Logging !=  newSvcRule.Spec.Logging{
 			return true
 		}
 		if oldSvcRule.Spec.Service != oldSvcRule.Spec.Service{

@@ -2343,6 +2343,95 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 }
 
 func TestMockServiceEgressRule(t *testing.T){
+	svcgrList := kubeovnv1alpha1.ServiceEgressRuleList{
+		Items: []kubeovnv1alpha1.ServiceEgressRule{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "svcgr",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ServiceEgressRuleSpec{
+					Action: "accept",
+					Logging: true,
+					Service: "test",
+					ExternalServices: []string{"exsvc"},
+				},
+			},
+		},
+	}
+	exsvcList := kubeovnv1alpha1.ExternalServiceList{
+		Items: []kubeovnv1alpha1.ExternalService{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "exsvc",
+					Namespace: "dwb-test",
+				},
+				Spec: kubeovnv1alpha1.ExternalServiceSpec{
+					Addresses: []string{
+						"192.168.2.2",
+					},
+					Ports: []kubeovnv1alpha1.ExternalServicePort{
+						{
+							Name: "udp-9090",
+							Protocol: "udp",
+							Port: "9090",
+							Bandwidth: "bwc-2mbps-irule",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	as3cfg := As3Config{
+		ClusterName:          "cck8s",
+		IsSupportRouteDomain: false,
+		Tenant: []TenantConfig{
+			{
+				Name: "Common",
+				Namespaces: "",
+				RouteDomain: RouteDomain{
+					Name: "0",
+					Id:   0,
+				},
+				VirtualService: VirtualService{},
+				Gwpool: Gwpool{
+					ServerAddresses: []string{"192.168.132.1"},
+				},
+			},
+		},
+	}
+
+	epList := corev1.EndpointsList{
+		Items: []corev1.Endpoints{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+					Namespace: "dwb-test",
+				},
+				Subsets: []corev1.EndpointSubset{
+					{
+						Addresses: []corev1.EndpointAddress{
+							{
+								IP: "1.1.1.1",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	initTenantConfig(as3cfg, "dwb-test")
+	as3 := initDefaultAS3()
+	adc := as3[DeclarationKey].(as3ADC)[DefaultPartition]
+	srcAdc := map[string]interface{}{}
+	validateJSONAndFetchObject(adc, &srcAdc)
+	tntcfg := GetTenantConfigForParttition("dwb-test")
+	deltaSrc := as3ADC{}
+	post := newAs3Post(&svcgrList, nil, nil, &exsvcList, &epList, nil, tntcfg)
+	post.generateAS3ResourceDeclaration(deltaSrc)
+	body := fullResource(DefaultPartition, false, srcAdc, deltaSrc)
+	printObj(body)
 }
 
 func TestMockExtenalService(t *testing.T){
@@ -2389,7 +2478,6 @@ func TestMockExtenalService(t *testing.T){
 	as3cfg := As3Config{
 		ClusterName:          "k8s",
 		IsSupportRouteDomain: false,
-		LoggingEnabled: false,
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",
@@ -2844,6 +2932,7 @@ func TestSupportRouteDomain(t *testing.T) {
 				},
 				Spec: kubeovnv1alpha1.ServiceEgressRuleSpec{
 					Action: "accept",
+					Logging: true,
 					Service: "test",
 					ExternalServices: []string{"exsvc"},
 				},
@@ -2877,7 +2966,6 @@ func TestSupportRouteDomain(t *testing.T) {
 	as3cfg := As3Config{
 		ClusterName:          "cck8s",
 		IsSupportRouteDomain: true,
-		LoggingEnabled: false,
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",

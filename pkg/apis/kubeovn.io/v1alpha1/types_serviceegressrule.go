@@ -34,6 +34,7 @@ type ServiceEgressRule struct {
 // ServiceEgressRuleSpec is the spec for an F5TrafficControlRule resource
 type ServiceEgressRuleSpec struct {
 	Action           string   `json:"action"`
+	Logging          bool     `json:"logging,omitempty"`
 	Service          string   `json:"service"`
 	ExternalServices []string `json:"externalServices"`
 }
