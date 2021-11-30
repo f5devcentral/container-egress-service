@@ -3,7 +3,7 @@ GO_VERSION = 1.16
 
 REGISTRY = kubeovn
 NAME = ces-controller
-RELEASE_TAG = 0.4.0
+RELEASE_TAG = 0.1.0
 COMMIT = git-$(shell git rev-parse --short HEAD)
 DATE = $(shell date +"%Y-%m-%d_%H:%M:%S")
 GOLDFLAGS = "-w -s -X github.com/kubeovn/$(NAME)/versions.COMMIT=$(COMMIT) -X github.com/kubeovn/$(NAME)/versions.VERSION=$(RELEASE_TAG) -X github.com/kubeovn/$(NAME)/versions.BUILDDATE=$(DATE)"
