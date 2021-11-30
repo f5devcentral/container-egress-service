@@ -60,4 +60,4 @@ jobs:
         
       # Docker Push
       - name: Push docker image
-        run: docker push myf5/ces-controller:$imgtag
+        run: docker push myf5/ces-controller:$(imgtag)
