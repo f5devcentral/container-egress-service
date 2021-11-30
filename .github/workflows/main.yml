@@ -44,6 +44,10 @@ jobs:
       - name: Run make release
         run: make release
 
+      # Show docker images
+      - name: List images
+        run: docker images
+
       # Docker login
       - name: docker login
         run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD}}
