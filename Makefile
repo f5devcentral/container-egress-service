@@ -1,6 +1,8 @@
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_VERSION = 1.16
 
+GITHUBACTIONTRIGGERNUMBER = 1
+
 REGISTRY = myf5
 NAME = ces-controller
 RELEASE_TAG = 0.5.0
