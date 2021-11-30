@@ -57,6 +57,6 @@ jobs:
       # Get docker tag
       - name: Compose IMAGE repo and tag Then Push
         run: |
+          IMAGE_ID=$(grep "REGISTRY = " Makefile |awk '{print $3}')
           IMAGE_TAG=$(grep  "RELEASE_TAG = "  Makefile |awk '{print $3}')
-          IMAGE_ID=myf5/ces-controller
           docker push $IMAGE_ID:$IMAGE_TAG
