@@ -51,7 +51,11 @@ jobs:
       # Docker login
       - name: docker login
         run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD}}
-
+     
+      # Get docker tag
+      - name: Get tag of the image
+        run: imgtag=$(grep  "RELEASE_TAG = "  Makefile |awk '{print $3}')
+        
       # Docker Push
       - name: Push docker image
-        run: docker push myf5/ces-controller:0.5.0
+        run: docker push myf5/ces-controller:$imgtag
