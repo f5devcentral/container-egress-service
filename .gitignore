@@ -1,3 +1,4 @@
 dist/ces-controller
 .idea
 .vscode
+.DS_Store
