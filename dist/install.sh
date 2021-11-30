@@ -447,7 +447,7 @@ spec:
       serviceAccountName: ces-controller
       containers:
         - name: ces-controller
-          image: kubeovn/ces-controller:0.1.0
+          image: myf5/ces-controller:0.5.0
           imagePullPolicy: IfNotPresent
           resources:
             requests:
