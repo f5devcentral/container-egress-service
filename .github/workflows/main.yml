@@ -7,6 +7,8 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches: [ master ]
+    paths:
+      - 'Makefile'
   pull_request:
     branches: [ master ]
 
@@ -53,7 +55,7 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }}  --password-stdin
      
       # Get docker tag
-      - name: Compose IMAGE repo and tag
+      - name: Compose IMAGE repo and tag Then Push
         run: |
           IMAGE_TAG=$(grep  "RELEASE_TAG = "  Makefile |awk '{print $3}')
           IMAGE_ID=myf5/ces-controller
