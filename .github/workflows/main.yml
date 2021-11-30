@@ -28,16 +28,17 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run a one-line script
         run: echo Hello, world!
+        
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.1.4
+        with:
+          # The Go version to download (if necessary) and use. Supports semver spec and ranges.
+          go-version: 1.16
+          # Whether to download only stable versions
+          stable: # optional, default is true
+          # Used to pull node distributions from go-versions.  Since there's a default, this is typically not supplied by the user.
+          token: # optional, default is ${{ github.token }}
 
-- name: Setup Go environment
-  uses: actions/setup-go@v2.1.4
-  with:
-    # The Go version to download (if necessary) and use. Supports semver spec and ranges.
-    go-version: 1.16
-    # Whether to download only stable versions
-    stable: # optional, default is true
-    # Used to pull node distributions from go-versions.  Since there's a default, this is typically not supplied by the user.
-    token: # optional, default is ${{ github.token }}
 
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
