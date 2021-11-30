@@ -1,7 +1,7 @@
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_VERSION = 1.16
 
-REGISTRY = kubeovn
+REGISTRY = f5devcentral
 NAME = ces-controller
 RELEASE_TAG = 0.5.0
 COMMIT = git-$(shell git rev-parse --short HEAD)
