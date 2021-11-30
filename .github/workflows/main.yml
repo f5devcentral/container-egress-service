@@ -50,14 +50,18 @@ jobs:
 
       # Docker login
       - name: docker login
-        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD}}
+        run: echo "${{ secrets.DOCKERHUB_USERNAME }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p --password-stdin
      
       # Get docker tag
       - name: Get tag of the image
         run: |
           imgtag=$(grep  "RELEASE_TAG = "  Makefile |awk '{print $3}')
           echo $imgtag
-        
+      
+      # Compose image repo and name
+      - name: Compose image name and tag
+        run: |
+          IMAGE_ID="myf5/ces-controller"
       # Docker Push
       - name: Push docker image
-        run: docker push myf5/ces-controller:${imgtag}
+        run: docker push $IMAGE_ID:$imgtag
