@@ -50,7 +50,7 @@ jobs:
 
       # Docker login
       - name: docker login
-        run: echo "${{ secrets.DOCKERHUB_USERNAME }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p --password-stdin
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p --password-stdin
      
       # Get docker tag
       - name: Get tag of the image
