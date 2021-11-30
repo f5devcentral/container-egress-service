@@ -50,4 +50,4 @@ jobs:
 
       # Docker Push
       - name: Push docker image
-        run: docker push myf5/ces-controller:latest
+        run: docker push myf5/ces-controller:0.5.0
