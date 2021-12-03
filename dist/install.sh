@@ -447,7 +447,7 @@ spec:
       serviceAccountName: ces-controller
       containers:
         - name: ces-controller
-          image: myf5/ces-controller:0.5.0
+          image: f5devcentral/ces-controller:0.5.0
           imagePullPolicy: IfNotPresent
           resources:
             requests:
