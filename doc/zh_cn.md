@@ -91,7 +91,10 @@ tenant:
         - "0.0.0.0"
     gwPool:
       serverAddresses:
-        - "192.168.10.1"
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''
   - name: project2
     namespaces: project2
     routeDomain:
@@ -103,8 +106,12 @@ tenant:
         - "1.0.0.0"
     gwPool:
       serverAddresses:
-        - "1.16.10.22"
-        - "192.168.10.22"
+        template: '{
+              "class": "Service_Address",
+              "virtualAddress": "0.0.0.0",
+              "icmpEcho": "disable",
+              "arpEnabled": false
+        }'
   - name: project3
     namespaces: project3,test-ns-a
     routeDomain:
@@ -209,29 +216,33 @@ logPool:
 ###上面配置参数说明：
 
 ```
-clusterName： 当前集群名称，用于rule的规则前缀
+clusterName：             当前集群名称，用于rule的规则前缀
 
-isSupportRouteDomain： 是否支持严格的RouteDomain
+isSupportRouteDomain：    是否支持严格的RouteDomain
 
-masterCluster：对于多集群对应单BIG-IP时，需要设置，控制初始化Common tenant
+masterCluster：           对于多集群对应单BIG-IP时，需要设置，控制初始化Common tenant
 
-schemaVersion： AS3中ADC的版本，默认为3.29.0
+schemaVersion：           AS3中ADC的版本，默认为3.29.0
 
-iRule： 流量控制配置，此参数需优先在BIG-IP中设置好。
+iRule：                   流量控制配置，此参数需优先在BIG-IP中设置好。
 
 tenant：
-   name: tenant的名称，对应BIG-IP中的partition
-   namespaces： tenant对应的命名空间，多个可以用逗号隔开，eg: 不支持rd时。此参数可控制监听的namespace下的资源
-   virtualService： ##VS
-     template: VS的模板。用户可自行定义，需要满足AS3规范，具体看上面实例。
-     virtualAddresses： VS中virtualAddresses的值。
-   gwPool： ####gateway
-     serverAddresses: gwpool中的参数值，gateway的ip列表
-   logPool：##日志
-     loggingEnabled： 是否配置log profile
-     enableRemoteLog： 是否开启远程日志
-     serverAddresses： pool中的ip列表
-     template：日志配置模板。可参考上面实例
+   name:                  tenant的名称，对应BIG-IP中的partition
+   namespaces：           tenant对应的命名空间，多个可以用逗号隔开，eg: 不支持rd时。此参数可控制监听的namespace下的资源
+   virtualService：       ##VS
+     template:            VS的模板。用户可自行定义，需要满足AS3规范，具体看上面实例。
+     virtualAddresses：   ##virtualAddresses
+       virtualAddress:    serviceAddress中virtualAddresses的值。
+       icmpEcho:          serviceAddress中icmp的配置
+       arpEnabled:        serviceAddress中arp的配置
+       template:          serviceAddress的模板设置
+   gwPool：               ####gateway
+     serverAddresses:     gwpool中的参数值，gateway的ip列表
+   logPool：              ##日志
+     loggingEnabled：     是否配置log profile
+     enableRemoteLog：    是否开启远程日志
+     serverAddresses：    pool中的ip列表
+     template：           日志配置模板。可参考上面实例
    
 ```
 

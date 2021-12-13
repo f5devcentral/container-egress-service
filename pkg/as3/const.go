@@ -20,6 +20,7 @@ const (
 	ClassFirewallRuleList    = "Firewall_Rule_List"
 	ClassFirewallPolicy      = "Firewall_Policy"
 	ClassVirtualServerL4     = "Service_L4"
+	ClassServiceAddress      = "Service_Address"
 	ClassPoll                = "Pool"
 	ClassSecurityLogProfile  = "Security_Log_Profile"
 	ClassLogPublisher        = "Log_Publisher"
