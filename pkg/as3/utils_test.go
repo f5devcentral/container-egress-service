@@ -2986,7 +2986,11 @@ func TestSupportRouteDomain(t *testing.T) {
 					Id:   1,
 				},
 				VirtualService: VirtualService{
-					VirtualAddresses: []string{"2.2.2.2"},
+					VirtualAddresses: VirtualAddresses{
+						VirtualAddress: "1.1.1.1",
+						IcmpEcho: "disable",
+						ArpEnabled: true,
+					},
 				},
 				Gwpool: Gwpool{
 					ServerAddresses: []string{"192.168.132.2"},

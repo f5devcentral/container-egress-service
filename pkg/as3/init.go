@@ -214,6 +214,7 @@ func skipDeleteShareApplicationClassOrAttr(partition, attr string) bool {
 		ClassKey:                 true,
 		TemplateKey:              true,
 		getAs3VSAttr():           true,
+		getAs3VsVaAttr():         true,
 		getAs3GwPoolAttr():       true,
 		getAllDenyRuleListAttr(): true,
 	}

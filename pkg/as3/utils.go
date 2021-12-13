@@ -110,6 +110,9 @@ func (ac *as3Post) processResourcesForAS3(sharedApp as3Application) {
 	//Create log pools
 	ac.newLogPoolDecl(sharedApp)
 
+	//Create VS ARP
+	ac.newVirtualAddressDecl(sharedApp)
+
 	//Create AS3 Service for virtual server
 	ac.newServiceDecl(sharedApp)
 }
@@ -344,6 +347,41 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 	}
 }
 
+//Create VS ARP
+func(ac *as3Post) newVirtualAddressDecl(sharedApp as3Application){
+	virtualAddress := ac.tenantConfig.VirtualService.VirtualAddresses.VirtualAddress
+	if len(virtualAddress) == 0 {
+		virtualAddress = "0.0.0.0"
+	}
+	//Enhance the ARP control ability of VS's virtualaddress
+	//virtualAddress of VA use first value if config one address in VirtualAddresses of VS
+	defaultVa := &VirtualServerVa{
+		Class: ClassServiceAddress,
+		VirtualAddress: virtualAddress,
+		IcmpEcho: "disable",
+		ArpEnabled: false,
+	}
+	vaTemplate := ac.tenantConfig.VirtualService.VirtualAddresses.template
+	if strings.TrimSpace(vaTemplate) != ""{
+		va := map[string]interface{}{}
+		err := validateJSONAndFetchObject(vaTemplate, &va)
+		if err == nil{
+			sharedApp[getAs3VsVaAttr()] = defaultVa
+		}
+	}
+	if _, ok := sharedApp[getAs3VsVaAttr()]; !ok{
+		virtualAddresses := ac.tenantConfig.VirtualService.VirtualAddresses
+		if virtualAddresses.VirtualAddress != ""{
+			defaultVa.VirtualAddress = virtualAddresses.VirtualAddress
+		}
+		if virtualAddresses.IcmpEcho != ""{
+			defaultVa.IcmpEcho = virtualAddresses.IcmpEcho
+		}
+		defaultVa.ArpEnabled = virtualAddresses.ArpEnabled
+	}
+	sharedApp[getAs3VsVaAttr()] = defaultVa
+}
+
 // Create AS3 Service for Route
 func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 	svcPolicyPath := getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3PolicyAttr("svc", ac.tenantConfig.RouteDomain.Name))
@@ -352,7 +390,7 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 	if isConfigLogProfile() {
 		enableSecurityLog = true
 	}
-	if ac.tenantConfig.VirtualService.Template != "" {
+	if strings.TrimSpace(ac.tenantConfig.VirtualService.Template) != "" {
 		vsTemplate := strings.ReplaceAll(ac.tenantConfig.VirtualService.Template, "k8s", GetCluster())
 		vsTemplate = strings.ReplaceAll(vsTemplate, "{{tenant}}", ac.tenantConfig.Name)
 
@@ -366,20 +404,25 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 			if !enableSecurityLog {
 				delete(vs, "securityLogProfiles")
 			}
+			vs["virtualAddresses"] = []Use{
+				{
+					getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3VsVaAttr()),
+				},
+			}
 			sharedApp[getAs3VSAttr()] = vs
 			return
 		}
 	}
 	//error not nil or template is '', set default
-	VirtualAddresses := ac.tenantConfig.VirtualService.VirtualAddresses
-	if len(ac.tenantConfig.VirtualService.VirtualAddresses) == 0 {
-		VirtualAddresses = []string{"0.0.0.0"}
-	}
 	defaultVs := &VirtualServer{
 		Layer4:                 "any",
 		TranslateServerAddress: false,
 		TranslateServerPort:    false,
-		VirtualAddresses:       VirtualAddresses,
+		VirtualAddresses:       []Use{
+			{
+				getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3VsVaAttr()),
+			},
+		},
 		PolicyFirewallEnforced: Use{
 			svcPolicyPath,
 		},
@@ -666,6 +709,10 @@ func getAs3GwPoolAttr() string {
 
 func getAs3VSAttr() string {
 	return fmt.Sprintf("%s_outbound_vs", GetCluster())
+}
+
+func getAs3VsVaAttr() string{
+	return fmt.Sprintf("%s_outbound_va", GetCluster())
 }
 
 func getAs3UsePathForPartition(partition, attr string) string {

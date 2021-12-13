@@ -1,5 +1,5 @@
 clusterName: k8s
-isSupportRouteDomain: true
+isSupportRouteDomain: false
 ##AS3 basic configuration
 ##Multi-cluster docking single BIG-IP, controller Common init and remote log
 masterCluster: k8s
@@ -15,7 +15,10 @@ tenant:
     virtualService:
       template: ''
       virtualAddresses:
-        - "0.0.0.0"
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''
     gwPool:
       serverAddresses:
         - "192.168.10.1"
@@ -27,7 +30,10 @@ tenant:
     virtualService:
       template: ""
       virtualAddresses:
-        - "1.0.0.0"
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''
     gwPool:
       serverAddresses:
         - "1.16.10.22"
