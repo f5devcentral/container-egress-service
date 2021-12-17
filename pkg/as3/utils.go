@@ -84,6 +84,10 @@ func newAs3Obj(partition string, shareApplication interface{}) interface{} {
 	tenant.initDefault(partition)
 	tenant[SharedKey] = shareApplication
 	adc[partition] = tenant
+	//remove Common if partition is not Common
+	if IsSupportRouteDomain() && partition != DefaultPartition{
+		delete(adc, DefaultPartition)
+	}
 	ac[DeclarationKey] = adc
 	return ac
 }

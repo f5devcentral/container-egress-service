@@ -2389,7 +2389,7 @@ func TestMockServiceEgressRule(t *testing.T){
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",
-				Namespaces: "",
+				Namespaces: "dwb-test",
 				RouteDomain: RouteDomain{
 					Name: "0",
 					Id:   0,
