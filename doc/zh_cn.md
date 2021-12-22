@@ -88,13 +88,13 @@ tenant:
     virtualService:
       template: ''
       virtualAddresses:
-        - "0.0.0.0"
-    gwPool:
-      serverAddresses:
         virtualAddress: "0.0.0.0"
         icmpEcho: "disable"
         arpEnabled: false
         template: ''
+    gwPool:
+      serverAddresses:
+        - "192.168.10.1"
   - name: project2
     namespaces: project2
     routeDomain:
@@ -103,15 +103,16 @@ tenant:
     virtualService:
       template: ""
       virtualAddresses:
-        - "1.0.0.0"
-    gwPool:
-      serverAddresses:
         template: '{
               "class": "Service_Address",
               "virtualAddress": "0.0.0.0",
               "icmpEcho": "disable",
               "arpEnabled": false
         }'
+    gwPool:
+      serverAddresses:
+        - "1.16.10.22"
+        - "192.168.10.22"
   - name: project3
     namespaces: project3,test-ns-a
     routeDomain:
@@ -138,6 +139,11 @@ tenant:
                  "class": "Service_L4",
                  "pool": "k8s_gw_pool"
              }'
+      virtualAddresses:
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''     
     gwPool:
       serverAddresses:
         - "10.16.10.23"
