@@ -52,7 +52,6 @@ metadata:
   namespace: project3
 spec:
   action: accept
-  subnet: 1.1.1.1
   externalServices:
     - exsvc3
 

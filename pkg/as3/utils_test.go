@@ -2389,7 +2389,7 @@ func TestMockServiceEgressRule(t *testing.T){
 		Tenant: []TenantConfig{
 			{
 				Name: "Common",
-				Namespaces: "",
+				Namespaces: "dwb-test",
 				RouteDomain: RouteDomain{
 					Name: "0",
 					Id:   0,
@@ -2986,7 +2986,11 @@ func TestSupportRouteDomain(t *testing.T) {
 					Id:   1,
 				},
 				VirtualService: VirtualService{
-					VirtualAddresses: []string{"2.2.2.2"},
+					VirtualAddresses: VirtualAddresses{
+						VirtualAddress: "1.1.1.1",
+						IcmpEcho: "disable",
+						ArpEnabled: true,
+					},
 				},
 				Gwpool: Gwpool{
 					ServerAddresses: []string{"192.168.132.2"},

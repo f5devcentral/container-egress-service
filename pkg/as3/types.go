@@ -52,9 +52,9 @@ type FirewallRule struct {
 	IRule       *IRule              `json:"iRule,omitempty"`
 	Destination FirewallDestination `json:"destination,omitempty"`
 
-	Source FirewallSource `json:"source,omitempty"`
-	Action string         `json:"action,omitempty"`
-	LoggingEnabled bool   `json:"loggingEnabled,omitempty"`
+	Source         FirewallSource `json:"source,omitempty"`
+	Action         string         `json:"action,omitempty"`
+	LoggingEnabled bool           `json:"loggingEnabled,omitempty"`
 }
 
 type IRule struct {
@@ -105,13 +105,21 @@ type VirtualServer struct {
 	Layer4                 string   `json:"layer4"`
 	TranslateServerAddress bool     `json:"translateServerAddress"`
 	TranslateServerPort    bool     `json:"translateServerPort"`
-	VirtualAddresses       []string `json:"virtualAddresses"`
+	VirtualAddresses       []Use `json:"virtualAddresses"`
 	PolicyFirewallEnforced Use      `json:"policyFirewallEnforced"`
 	SecurityLogProfiles    []Use    `json:"securityLogProfiles,omitempty"`
 	VirtualPort            int      `json:"virtualPort"`
 	Snat                   string   `json:"snat"`
 	Class                  string   `json:"class"`
 	Pool                   string   `json:"pool"`
+}
+
+//ARP
+type VirtualServerVa struct {
+	Class          string `json:"class"`
+	VirtualAddress string `json:"virtualAddress"`
+	IcmpEcho       string `json:"icmpEcho"`
+	ArpEnabled     bool   `json:"arpEnabled"`
 }
 
 //viper
@@ -128,7 +136,7 @@ type (
 
 	LogPool struct {
 		//Whether to configure logging profile
-		LoggingEnabled  bool     `mapstructure:"loggingEnabled"`
+		LoggingEnabled bool `mapstructure:"loggingEnabled"`
 		//Whether to open remote log
 		EnableRemoteLog bool     `mapstructure:"enableRemoteLog"`
 		Template        string   `mapstructure:"template"`
@@ -156,7 +164,14 @@ type (
 	VirtualService struct {
 		//Custom vs structure，if "", use Common vs value
 		Template         string   `mapstructure:"template"`
-		VirtualAddresses []string `mapstructure:"virtualAddresses"`
+		VirtualAddresses VirtualAddresses `mapstructure:"virtualAddresses"`
+	}
+
+	VirtualAddresses struct {
+		VirtualAddress string `mapstructure:"virtualAddress"`
+		IcmpEcho       string `mapstructure:"icmpEcho"`
+		ArpEnabled     bool   `mapstructure:"arpEnabled"`
+		template       string `mapstructure:"template"`
 	}
 )
 
@@ -188,8 +203,8 @@ type (
 type (
 	portIrule struct {
 		protocol string
-		irule string
-		ports []string
+		irule    string
+		ports    []string
 	}
 
 	//protocol map[string]portIrule

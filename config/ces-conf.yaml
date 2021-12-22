@@ -11,23 +11,29 @@ iRule:
 tenant:
   ##common partiton config, init AS3 needs
   - name: "Common"
-    namespaces: "default,dwb-test1,dwb-test"
+    namespaces: "dwb-test1,dwb-test"
     virtualService:
       template: ''
       virtualAddresses:
-        - "0.0.0.0"
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''
     gwPool:
       serverAddresses:
         - "192.168.10.1"
   - name: p2
-    namespaces: dwb-test
+    namespaces: default
     routeDomain:
       id: 2
       name: "rd2"
     virtualService:
       template: ""
       virtualAddresses:
-        - "1.0.0.0"
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''
     gwPool:
       serverAddresses:
         - "1.16.10.22"
