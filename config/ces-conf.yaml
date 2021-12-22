@@ -64,6 +64,11 @@ tenant:
                  "class": "Service_L4",
                  "pool": "k8s_gw_pool"
              }'
+      virtualAddresses:
+        virtualAddress: "0.0.0.0"
+        icmpEcho: "disable"
+        arpEnabled: false
+        template: ''
     gwPool:
       serverAddresses:
         - "10.16.10.23"
