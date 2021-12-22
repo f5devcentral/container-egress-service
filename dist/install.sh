@@ -420,9 +420,14 @@ data:
         namespaces: ""
         virtualService:
           template: ''
+          virtualAddresses:
+            virtualAddress: "0.0.0.0"
+            icmpEcho: "disable"
+            arpEnabled: false
+            template: ''
         gwPool:
           serverAddresses:
-            - "192.168.10.1"
+            - "10.5.0.254"
 EOF
 echo "-------------------------------"
 echo ""
@@ -447,7 +452,7 @@ spec:
       serviceAccountName: ces-controller
       containers:
         - name: ces-controller
-          image: f5devcentral/ces-controller:0.5.0
+          image: f5devcentral/ces-controller:0.5.1
           imagePullPolicy: IfNotPresent
           resources:
             requests:
