@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
@@ -336,15 +337,35 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 			sharedApp[k] = v
 		}
 	}
+	//servicePort default is 514
+	numbers := []Member{}
+	if len(log.ServerAddresses) != 0{
+		for _, v :=range log.ServerAddresses{
+			ips := strings.Split(v, ":")
+			ip := ips[0]
+			port := 514
+			if len(ips)> 1{
+				vs, err := strconv.Atoi(ips[1])
+				if err == nil{
+					port = vs
+				}
+			}
+			numbers = append(numbers, Member{
+				ServerAddresses: []string{ip},
+				ServicePort:     port,
+				Enable:          true,
+			})
+		}
+	}else {
+		numbers = append(numbers, Member{
+			ServerAddresses: []string{"0.0.0.0"},
+			ServicePort:     514,
+			Enable:          true,
+		})
+	}
 	sharedApp[GetCluster()+"_log_pool"] = &Pool{
 		Class: ClassPoll,
-		Members: []Member{
-			Member{
-				ServerAddresses: log.ServerAddresses,
-				ServicePort:     0,
-				Enable:          true,
-			},
-		},
+		Members: numbers,
 		Monitors: []Monitor{
 			Monitor{Bigip: "/Common/gateway_icmp"},
 		},

@@ -2743,7 +2743,8 @@ func TestRomteLog(t *testing.T) {
 		IsSupportRouteDomain: false,
 		LogPool: LogPool{
 			EnableRemoteLog: false,
-			ServerAddresses: []string{"1.1.1.1"},
+			LoggingEnabled: true,
+			ServerAddresses: []string{"1.1.1.1:8888"},
 			Template: `
 {
     "k8s_afm_hsl_log_profile": {
