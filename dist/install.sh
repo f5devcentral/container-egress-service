@@ -347,13 +347,14 @@ data:
     logPool:
       loggingEnabled: true
       enableRemoteLog: false
+      healthMonitor: gateway_icmp
       serverAddresses:
-        - "1.2.3.4"
+        - "1.2.3.4:514"
       template: '{
                      "k8s_afm_hsl_log_profile": {
                          "network": {
                              "publisher": {
-                                 "use": "/Common/Shared/k8s_firewall_hsl_log_publisher"
+                                 "use": "/{{tenant}}/Shared/k8s_firewall_hsl_log_publisher"
                              },
                              "storageFormat": {
                                  "fields": [
@@ -387,20 +388,20 @@ data:
                      "k8s_firewall_hsl_log_publisher": {
                          "destinations": [
                              {
-                                 "use": "/Common/Shared/k8s_remote-hsl-dest"
+                                 "use": "/{{tenant}}/Shared/k8s_remote-hsl-dest"
                              },
                              {
-                                 "use": "/Common/Shared/k8s_remote-hsl-dest-format"
+                                 "use": "/{{tenant}}/Shared/k8s_remote-hsl-dest-format"
                              },
                              {
-                                 "bigip": "/Common/local-db"
+                                 "bigip": "/{{tenant}}/local-db"
                              }
                          ],
                          "class": "Log_Publisher"
                      },
                      "k8s_remote-hsl-dest": {
                          "pool": {
-                             "use": "/Common/Shared/k8s_log_pool"
+                             "use": "/{{tenant}}/Shared/k8s_log_pool"
                          },
                          "class": "Log_Destination",
                          "type": "remote-high-speed-log"
@@ -408,7 +409,7 @@ data:
                      "k8s_remote-hsl-dest-format": {
                          "format": "rfc5424",
                          "remoteHighSpeedLog": {
-                             "use": "/Common/Shared/k8s_remote-hsl-dest"
+                             "use": "/{{tenant}}/Shared/k8s_remote-hsl-dest"
                          },
                          "class": "Log_Destination",
                          "type": "remote-syslog"
@@ -419,6 +420,9 @@ data:
       - name: "Common"
         namespaces: ""
         virtualService:
+          virtualAddress: "0.0.0.0"
+          icmpEcho: "disable"
+          arpEnabled: false
           template: ''
           virtualAddresses:
             virtualAddress: "0.0.0.0"

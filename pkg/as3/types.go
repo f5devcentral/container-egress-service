@@ -139,6 +139,7 @@ type (
 		LoggingEnabled bool `mapstructure:"loggingEnabled"`
 		//Whether to open remote log
 		EnableRemoteLog bool     `mapstructure:"enableRemoteLog"`
+		HealthMonitor   string   `mapstructure:"healthMonitor"`
 		Template        string   `mapstructure:"template"`
 		ServerAddresses []string `mapstructure:"serverAddresses"`
 	}

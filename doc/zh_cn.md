@@ -151,7 +151,7 @@ logPool:
   loggingEnabled: true
   enableRemoteLog: false
   serverAddresses:
-    - "1.2.3.4"
+    - "1.2.3.4:514"
   template: '{
                  "k8s_afm_hsl_log_profile": {
                      "network": {
@@ -247,7 +247,8 @@ tenant：
    logPool：              ##日志
      loggingEnabled：     是否配置log profile
      enableRemoteLog：    是否开启远程日志
-     serverAddresses：    pool中的ip列表
+     healthMonitor:       健康检查的方法 （tcp, udp， gateway_icmp）
+     serverAddresses：    pool中的serverAddresses列表, 默认端口为514
      template：           日志配置模板。可参考上面实例
    
 ```
