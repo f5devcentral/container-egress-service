@@ -367,7 +367,7 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 		Class: ClassPoll,
 		Members: numbers,
 		Monitors: []Monitor{
-			Monitor{Bigip: "/Common/gateway_icmp"},
+			Monitor{Bigip: fmt.Sprintf("/%s/%s", DefaultPartition, log.HealthMonitor)},
 		},
 	}
 }
