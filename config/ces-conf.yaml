@@ -75,6 +75,7 @@ tenant:
 logPool:
   loggingEnabled: true
   enableRemoteLog: false
+  healthMonitor: tcp
   serverAddresses:
     - "1.2.3.4:514"
   template: '{
