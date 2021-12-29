@@ -17,12 +17,11 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/kubeovn/ces-controller/pkg/as3"
@@ -31,7 +30,6 @@ import (
 	"github.com/kubeovn/ces-controller/pkg/signals"
 
 	"github.com/kubeovn/ces-controller/pkg/controller"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -98,39 +96,25 @@ func main() {
 		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
-	dm, err := kubeClient.AppsV1().Deployments("").List(context.Background(), metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", controller.ControllerAgentName),
-	})
-	if err != nil{
-		klog.Fatalf("failed to get deploy[%s]: %v", controller.ControllerAgentName, err)
-	}
-	if len(dm.Items) != 1{
-		klog.Fatalf("failed to get deploy[%s]", controller.ControllerAgentName)
-	}
-	ns := dm.Items[0].Namespace
-	cm, err := kubeClient.CoreV1().ConfigMaps(ns).Get(context.Background(), controller.ControllerConfigmap, metav1.GetOptions{})
-	if err != nil {
-		klog.Fatalf("failed to get configmap[%s]: %v", controller.ControllerConfigmap, err)
-	}
-
-	var initialized bool
-	if s := cm.Data["initialized"]; s != "" {
-		if initialized, err = strconv.ParseBool(s); err != nil {
-			klog.Fatalf("failed to parse bool value in configmap[%s]: %v", controller.ControllerConfigmap, err)
-		}
+	//dm, err := kubeClient.AppsV1().Deployments("").List(context.Background(), metav1.ListOptions{
+	//	FieldSelector: fmt.Sprintf("metadata.name=%s", controller.ControllerAgentName),
+	//})
+	//if err != nil{
+	//	klog.Fatalf("failed to get deploy[%s]: %v", controller.ControllerAgentName, err)
+	//}
+	//if len(dm.Items) != 1{
+	//	klog.Fatalf("failed to get deploy[%s]", controller.ControllerAgentName)
+	//}
+	//ns := dm.Items[0].Namespace
+	controllerNamespace := os.Getenv("CES_NAMESPACE")
+	if controllerNamespace == "" {
+		klog.Fatal("env CES_NAMESPACE can't be empty ")
 	}
 	bigIpClient := as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure)
-	err = as3.InitAs3Tenant(bigIpClient, bigipConfDir, initialized, ns)
+	err = as3.InitAs3Tenant(bigIpClient, bigipConfDir, controllerNamespace)
 	if err != nil {
 		klog.Fatalf("failed to initialize AS3 declaration: %v", err)
 	}
-	if !initialized {
-		cm.Data["initialized"] = "true"
-		if _, err = kubeClient.CoreV1().ConfigMaps(ns).Update(context.Background(), cm, metav1.UpdateOptions{}); err != nil {
-			klog.Fatalf("failed to update configmap[%s]: %v", controller.ControllerConfigmap, err)
-		}
-	}
-
 	as3Client, err := clientset.NewForConfig(cfg)
 	if err != nil {
 		klog.Fatalf("Error building AS3 clientset: %s", err.Error())
