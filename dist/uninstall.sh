@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-K8S_NAMESPACE=${K8S_NAMESPACE:-kube-system} # namespace in which the controller will be deployed 
+CES_NAMESPACE=${CES_NAMESPACE:-kube-system} # namespace in which the controller will be deployed
+CES_DEPLOMENT_NAME=${CES_DEPLOMENT_NAME:-ces-controller}
 
 echo "[Step 1] Delete CES Controller"
-kubectl -n $K8S_NAMESPACE delete --ignore-not-found deployment ces-controller
+kubectl -n $CES_NAMESPACE delete --ignore-not-found deployment $CES_DEPLOMENT_NAME
 echo "-------------------------------"
 echo ""
 
 echo "[Step 2] Delete RBAC"
 kubectl delete --ignore-not-found clusterrolebinding ces-controller
 kubectl delete --ignore-not-found clusterrole ces-controller
-kubectl -n $K8S_NAMESPACE delete --ignore-not-found sa ces-controller
+kubectl -n $CES_NAMESPACE delete --ignore-not-found sa ces-controller
 echo "-------------------------------"
 echo ""
 
@@ -24,11 +25,11 @@ echo "-------------------------------"
 echo ""
 
 echo "[Step 4] Delete Secret"
-kubectl -n $K8S_NAMESPACE delete --ignore-not-found secret bigip-creds
+kubectl -n $CES_NAMESPACE delete --ignore-not-found secret bigip-creds
 echo "-------------------------------"
 echo ""
 
 echo "[Step 5] Delete ConfigMap"
-kubectl -n $K8S_NAMESPACE delete --ignore-not-found cm ces-controller-configmap
+kubectl -n $CES_NAMESPACE delete --ignore-not-found cm ces-controller-configmap
 echo "-------------------------------"
 echo ""

@@ -272,6 +272,8 @@ ces-controller-configmap中的参数initialized：
 BIGIP_URL： BIG-IP服务的ip
 BIGIP_USERNAME： BIG-IP的用户名
 BIGIP_INSECURE： BIG-IP的密码
+CES_NAMESPACE: 控制器的命名空间
+CES_DEPLOMENT_NAME: 控制器应用的名称
 ```
 
 然后执行install.sh 脚本

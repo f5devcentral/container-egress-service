@@ -9,7 +9,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func InitAs3Tenant(client *Client, filePath string, initialized bool, cesNamespace string) error {
+func InitAs3Tenant(client *Client, filePath string, cesNamespace string) error {
 	config := viper.New()
 	config.AddConfigPath(filePath)
 	config.SetConfigName("ces-conf")
@@ -46,12 +46,12 @@ namespaces:
 		return fmt.Errorf("No configured Common, please configured, eg: \n%s\n", msg)
 	}
 
-	if getMasterCluster() == GetCluster() && !initialized {
+	if getMasterCluster() == GetCluster(){
 		as3Str, err := client.Get(DefaultPartition)
 		if err != nil {
 			return fmt.Errorf("failed to get partition, due to: %v", err)
 		}
-		if as3Str == "" {
+		if as3Str == "{}" {
 			return client.post(initDefaultAS3(), DefaultPartition)
 		}
 	}

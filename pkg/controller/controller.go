@@ -44,8 +44,6 @@ import (
 
 const ControllerAgentName = "ces-controller"
 
-const ControllerConfigmap = "ces-controller-configmap"
-
 const (
 	// SuccessSynced is used as part of the Event 'reason' when a resource is synced
 	SuccessSynced = "Synced"
