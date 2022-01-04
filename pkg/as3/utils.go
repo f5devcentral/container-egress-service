@@ -306,7 +306,7 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 	if !isConfigLogProfile() {
 		return
 	}
-	template := strings.ReplaceAll(log.Template, "k8s", GetCluster())
+	template := strings.ReplaceAll(log.Template, "k8s", getMasterCluster())
 	template = strings.ReplaceAll(template, "{{tenant}}", ac.tenantConfig.Name)
 	var logpool map[string]interface{}
 	err := validateJSONAndFetchObject(template, &logpool)
@@ -363,7 +363,7 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 			Enable:          true,
 		})
 	}
-	sharedApp[GetCluster()+"_log_pool"] = &Pool{
+	sharedApp[getMasterCluster()+"_log_pool"] = &Pool{
 		Class: ClassPoll,
 		Members: numbers,
 		Monitors: []Monitor{
@@ -416,7 +416,8 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 		enableSecurityLog = true
 	}
 	if strings.TrimSpace(ac.tenantConfig.VirtualService.Template) != "" {
-		vsTemplate := strings.ReplaceAll(ac.tenantConfig.VirtualService.Template, "k8s", GetCluster())
+		//The property names of vs are mainly managed clusters
+		vsTemplate := strings.ReplaceAll(ac.tenantConfig.VirtualService.Template, "k8s", getMasterCluster())
 		vsTemplate = strings.ReplaceAll(vsTemplate, "{{tenant}}", ac.tenantConfig.Name)
 
 		vs := map[string]interface{}{}
@@ -451,7 +452,7 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 		PolicyFirewallEnforced: Use{
 			svcPolicyPath,
 		},
-		SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, "k8s_afm_hsl_log_profile")}},
+		SecurityLogProfiles: []Use{{getAs3UsePathForPartition(ac.tenantConfig.Name, strings.ReplaceAll("k8s_afm_hsl_log_profile", "k8s", getMasterCluster()))}},
 		VirtualPort:         0,
 		Snat:                "auto",
 		Class:               ClassVirtualServerL4,
@@ -715,29 +716,29 @@ func getAs3RuleListAttr(ty, namespace, ruleName, exsvcName string) string {
 
 func getAs3PolicyAttr(ty, routeDoamin string) string {
 	if ty == "global" {
-		return fmt.Sprintf("%s_system_global_policy", GetCluster())
+		return fmt.Sprintf("%s_system_global_policy", getMasterCluster())
 	}
 
 	if !IsSupportRouteDomain() {
 		routeDoamin = "rd"
 	}
-	return fmt.Sprintf("%s_%s_policy_%s", GetCluster(), ty, routeDoamin)
+	return fmt.Sprintf("%s_%s_policy_%s", getMasterCluster(), ty, routeDoamin)
 }
 
 func getAllDenyRuleListAttr() string {
-	return fmt.Sprintf("%s_svc_deny_all_rule_list", GetCluster())
+	return fmt.Sprintf("%s_svc_deny_all_rule_list", getMasterCluster())
 }
 
 func getAs3GwPoolAttr() string {
-	return fmt.Sprintf("%s_gw_pool", GetCluster())
+	return fmt.Sprintf("%s_gw_pool", getMasterCluster())
 }
 
 func getAs3VSAttr() string {
-	return fmt.Sprintf("%s_outbound_vs", GetCluster())
+	return fmt.Sprintf("%s_outbound_vs", getMasterCluster())
 }
 
 func getAs3VsVaAttr() string{
-	return fmt.Sprintf("%s_outbound_va", GetCluster())
+	return fmt.Sprintf("%s_outbound_va", getMasterCluster())
 }
 
 func getAs3UsePathForPartition(partition, attr string) string {
