@@ -6,10 +6,11 @@ BIGIP_USERNAME=${BIGIP_USERNAME:-}     # BigIP username
 BIGIP_PASSWORD=${BIGIP_PASSWORD:-}     # BigIP password
 BIGIP_INSECURE=${BIGIP_INSECURE:-true} # ignore Big-IP TLS error
 
-K8S_NAMESPACE=${K8S_NAMESPACE:-kube-system} # namespace in which the controller will be deployed
+CES_NAMESPACE=${CES_NAMESPACE:-kube-system} # namespace in which the controller will be deployed
+CES_DEPLOMENT_NAME=${CES_DEPLOMENT_NAME:-ces-controller}
 
 echo "[Step 1] Create Secret"
-kubectl -n $K8S_NAMESPACE create secret generic --from-literal "username=$BIGIP_USERNAME" --from-literal "password=$BIGIP_PASSWORD" bigip-creds
+kubectl -n $CES_NAMESPACE create secret generic --from-literal "username=$BIGIP_USERNAME" --from-literal "password=$BIGIP_PASSWORD" bigip-creds
 echo "-------------------------------"
 echo ""
 
@@ -246,7 +247,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: ces-controller
-  namespace: $K8S_NAMESPACE
+  namespace: $CES_NAMESPACE
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -315,7 +316,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: ces-controller
-    namespace: $K8S_NAMESPACE
+    namespace: $CES_NAMESPACE
 roleRef:
   kind: ClusterRole
   name: ces-controller
@@ -330,9 +331,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ces-controller-configmap
-  namespace: $K8S_NAMESPACE
+  namespace: $CES_NAMESPACE
 data:
-  initialized: "false"
   ces-conf.yaml: |-
     clusterName: k8s
     isSupportRouteDomain: false
@@ -420,15 +420,11 @@ data:
       - name: "Common"
         namespaces: ""
         virtualService:
+          template: ''
           virtualAddress: "0.0.0.0"
           icmpEcho: "disable"
           arpEnabled: false
           template: ''
-          virtualAddresses:
-            virtualAddress: "0.0.0.0"
-            icmpEcho: "disable"
-            arpEnabled: false
-            template: ''
         gwPool:
           serverAddresses:
             - "10.5.0.254"
@@ -441,8 +437,8 @@ cat << EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ces-controller
-  namespace: $K8S_NAMESPACE
+  name: $CES_DEPLOMENT_NAME
+  namespace: $CES_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -456,7 +452,10 @@ spec:
       serviceAccountName: ces-controller
       containers:
         - name: ces-controller
-          image: f5devcentral/ces-controller:0.5.2
+          image: f5devcentral/ces-controller:0.5.3
+          env:
+            - name: CES_NAMESPACE
+              value: $CES_NAMESPACE
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -494,4 +493,4 @@ echo ""
 
 echo "[Step 5] Wait CES Controller to Be Ready"
 sleep 1s
-kubectl -n $K8S_NAMESPACE wait pod --for=condition=Ready -l app=ces-controller
+kubectl -n $CES_NAMESPACE wait pod --for=condition=Ready -l app=ces-controller
