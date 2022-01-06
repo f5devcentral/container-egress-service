@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"context"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
@@ -84,7 +86,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		}
 	}()
 	//verify bandwidth
-	if !verifyExtenalService(service){
+	if !verifyExtenalService(service) {
 		err = fmt.Errorf("The bandwidth field is invalid, one of them should be filled in %s", as3.GetIRules())
 		return err
 	}
@@ -98,6 +100,8 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 			*service,
 		},
 	}
+	namespaceList := corev1.NamespaceList{}
+	endpointList := corev1.EndpointsList{}
 	tntcfg := &as3.TenantConfig{}
 	switch ruleType {
 	case as3.RuleTypeGlobal:
@@ -136,6 +140,14 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 				}
 			}
 		}
+		ns, err := c.kubeclientset.CoreV1().Namespaces().Get(context.Background(), service.Namespace, metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("failed to get namespace[%s],due to: %v", service.Namespace, err)
+			return err
+		}
+		namespaceList.Items = []corev1.Namespace{
+			*ns,
+		}
 		tntcfg = as3.GetTenantConfigForNamespace(service.Namespace)
 	case as3.RuleTypeService:
 		ruleList, err := c.seviceEgressRuleLister.ServiceEgressRules(service.Namespace).List(labels.Everything())
@@ -154,6 +166,17 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 				}
 			}
 		}
+		if find {
+			epName := serviceEgressRuleList.Items[0].Spec.Service
+			ep, err := c.endpointsLister.Endpoints(service.Namespace).Get(epName)
+			if err != nil {
+				klog.Errorf("failed to get endpoint [%s/%s],due to: %v", service.Namespace, epName, err)
+				return err
+			}
+			endpointList.Items = []corev1.Endpoints{
+				*ep,
+			}
+		}
 		tntcfg = as3.GetTenantConfigForNamespace(service.Namespace)
 	default:
 		klog.Info("don,t neet sync!")
@@ -164,7 +187,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		klog.Info("not found Associated rules，don,t neet sync!!")
 		return nil
 	}
-	err = c.as3Client.As3Request(&serviceEgressRuleList, &namespaceEgressRuleList, &clusterEgressruleList, &externalServicesList, nil, nil,
+	err = c.as3Client.As3Request(&serviceEgressRuleList, &namespaceEgressRuleList, &clusterEgressruleList, &externalServicesList, &endpointList, &namespaceList,
 		tntcfg, ruleType, isDelete)
 	if err != nil {
 		klog.Error(err)
@@ -174,14 +197,13 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 	return nil
 }
 
-
-func verifyExtenalService(exsvc *kubeovn.ExternalService)bool{
+func verifyExtenalService(exsvc *kubeovn.ExternalService) bool {
 	ports := exsvc.Spec.Ports
 	iruleStr := as3.GetIRules()
-	for _, port := range ports{
+	for _, port := range ports {
 		bindwidth := port.Bandwidth
-		if strings.TrimSpace(bindwidth) != ""{
-			if !strings.Contains(iruleStr, bindwidth){
+		if strings.TrimSpace(bindwidth) != "" {
+			if !strings.Contains(iruleStr, bindwidth) {
 				return false
 			}
 		}

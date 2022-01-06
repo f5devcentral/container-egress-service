@@ -102,16 +102,16 @@ type Monitor struct {
 }
 
 type VirtualServer struct {
-	Layer4                 string   `json:"layer4"`
-	TranslateServerAddress bool     `json:"translateServerAddress"`
-	TranslateServerPort    bool     `json:"translateServerPort"`
-	VirtualAddresses       []Use `json:"virtualAddresses"`
-	PolicyFirewallEnforced Use      `json:"policyFirewallEnforced"`
-	SecurityLogProfiles    []Use    `json:"securityLogProfiles,omitempty"`
-	VirtualPort            int      `json:"virtualPort"`
-	Snat                   string   `json:"snat"`
-	Class                  string   `json:"class"`
-	Pool                   string   `json:"pool"`
+	Layer4                 string `json:"layer4"`
+	TranslateServerAddress bool   `json:"translateServerAddress"`
+	TranslateServerPort    bool   `json:"translateServerPort"`
+	VirtualAddresses       []Use  `json:"virtualAddresses"`
+	PolicyFirewallEnforced Use    `json:"policyFirewallEnforced"`
+	SecurityLogProfiles    []Use  `json:"securityLogProfiles,omitempty"`
+	VirtualPort            int    `json:"virtualPort"`
+	Snat                   string `json:"snat"`
+	Class                  string `json:"class"`
+	Pool                   string `json:"pool"`
 }
 
 //ARP
@@ -127,7 +127,7 @@ type (
 	As3Config struct {
 		SchemaVersion        string         `mapstructure:"schemaVersion"`
 		ClusterName          string         `mapstructure:"clusterName"`
-		MasterCluster        string         `mapstructure:"master_cluster"`
+		MasterCluster        string         `mapstructure:"masterCluster"`
 		IsSupportRouteDomain bool           `mapstructure:"isSupportRouteDomain"`
 		IRule                []string       `mapstructure:"iRule"`
 		Tenant               []TenantConfig `mapstructure:"tenant"`
@@ -164,7 +164,7 @@ type (
 
 	VirtualService struct {
 		//Custom vs structure，if "", use Common vs value
-		Template         string   `mapstructure:"template"`
+		Template         string           `mapstructure:"template"`
 		VirtualAddresses VirtualAddresses `mapstructure:"virtualAddresses"`
 	}
 

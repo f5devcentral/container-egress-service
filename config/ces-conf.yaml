@@ -48,9 +48,6 @@ tenant:
                  "layer4": "any",
                  "translateServerAddress": false,
                  "translateServerPort": false,
-                 "virtualAddresses": [
-                     "1.1.0.0"
-                 ],
                  "policyFirewallEnforced": {
                      "use": "/{{tenant}}/Shared/k8s_svc_policy_rd3"
                  },

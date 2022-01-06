@@ -253,12 +253,6 @@ tenant：
    
 ```
 
-```
-
-ces-controller-configmap中的参数initialized： 
-   "true"服务启动是否要初始化as3,否则为false.
-```
-
 ##打包：
  
 ```make release```
