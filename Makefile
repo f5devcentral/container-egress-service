@@ -1,6 +1,5 @@
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GO_VERSION = 1.16
-
 GITHUBACTIONTRIGGERNUMBER = 4
 
 REGISTRY = f5devcentral
