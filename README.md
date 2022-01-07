@@ -1,5 +1,5 @@
 # Container Egress Services (CES)
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/f5devcentral/container-egress-service)
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/f5devcentral/container-egress-service) [![Action Build Status](https://github.com/f5devcentral/container-egress-service/workflows/Build/badge.svg)](https://github.com/f5devcentral/container-egress-service/actions)
 
 CES is a solution. It is used to help users better manage the outgoing traffic of k8s pod/container. It solves the challenge of outgoing traffic policy control in high dynamic IP scenarios in k8s native way, and provides a wealth of outgoing control capability. And through the hierarchical design, it solves the multi-role coordination problem among enterprise security, network, platform, and application operation departments.
 
