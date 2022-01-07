@@ -9,7 +9,7 @@ CES is a solution. It is used to help users better manage the outgoing traffic o
 - [Challenges solved](#Challenges-solved)
 - [Capabilities](#Capabilities)
 - [Documents](#Documents)
-- [Contributing](#contributing)
+- [Contact](#contact)
 - [License](#license)
 
 
@@ -78,7 +78,9 @@ Check the [Wiki](https://github.com/f5devcentral/container-egress-service/wiki) 
 
 
 
-## Contributing
+## Contact
+
+j.lin@f5.com
 
 
 
