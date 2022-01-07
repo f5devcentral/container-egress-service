@@ -6,7 +6,7 @@ CES is a solution. It is used to help users better manage the outgoing traffic o
 ## Table of Contents
 - [Background](#background)
 - [Install](#install)
-- [Challenges solved](#Challenges solved)
+- [Challenges solved](#Challenges%20solved)
 - [Capabilities](#Capabilities)
 - [Documents](#Documents)
 - [Contributing](#contributing)
