@@ -8,6 +8,8 @@ CES is a solution. It is used to help users manage the outgoing traffic of k8s p
   - [Table of Contents](#table-of-contents)
   - [Background](#background)
   - [Install](#install)
+  - [Usage](#usage)
+  - [Building](#building)
   - [Challenges solved](#challenges-solved)
   - [Capabilities](#capabilities)
   - [Documents](#documents)
@@ -31,7 +33,6 @@ By scoped policy designment, Security/network team, platform team, application t
 <img src="https://github.com/f5devcentral/container-egress-service/wiki/img/image-20211205152836043.png" alt="scoped CRD"/>
 
 
-
 ## Install
 
 1. Download the installation script
@@ -42,6 +43,19 @@ wget https://raw.githubusercontent.com/f5devcentral/container-egress-service/mas
 
 2. Edit the  `install.sh` script, edit the following variable values according to the actual environment. For detail, check the [wiki](https://github.com/f5devcentral/container-egress-service/wiki/2.CES%E5%AE%89%E8%A3%85)
 
+## Usage
+
+Please check the [Wiki](https://github.com/f5devcentral/container-egress-service/wiki) for different usage.
+
+## Building
+
+Docker image:
+```
+#GO_VERSION = 1.16
+git clone https://github.com/f5devcentral/container-egress-service.git
+cd container-egress-service
+Make release
+```
 
 
 ## Challenges solved
