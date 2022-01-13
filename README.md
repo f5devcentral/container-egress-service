@@ -8,7 +8,7 @@ CES is a solution. It is used to help users manage the outgoing traffic of k8s p
   - [Table of Contents](#table-of-contents)
   - [Background](#background)
   - [Install](#install)
-  - [Challenges-solved](#challenges-solved)
+  - [Challenges solved](#challenges-solved)
   - [Capabilities](#capabilities)
   - [Documents](#documents)
   - [Support](#support)
@@ -44,7 +44,7 @@ wget https://raw.githubusercontent.com/f5devcentral/container-egress-service/mas
 
 
 
-## Challenges-solved
+## Challenges solved
 
 - High-frequency changes in outbound traffic caused by container IP dynamics
 - Different role groups have different requirements for the scope setting of the policy, and the policy needs to match the role in multiple dimensions
