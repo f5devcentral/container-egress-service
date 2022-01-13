@@ -45,7 +45,7 @@ wget https://raw.githubusercontent.com/f5devcentral/container-egress-service/mas
 
 ## Usage
 
-Please check the [Wiki](https://github.com/f5devcentral/container-egress-service/wiki) for different usage.
+Please check the [Wiki](https://github.com/f5devcentral/container-egress-service/wiki) for different usages.
 
 ## Building
 
