@@ -1,16 +1,20 @@
 # Container Egress Services (CES)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/f5devcentral/container-egress-service) [![Action Build Status](https://github.com/f5devcentral/container-egress-service/workflows/Build/badge.svg)](https://github.com/f5devcentral/container-egress-service/actions) [![Docker pull](https://img.shields.io/docker/pulls/f5devcentral/ces-controller)](https://hub.docker.com/r/f5devcentral/ces-controller) [![Issues](https://img.shields.io/github/issues/f5devcentral/container-egress-service)](https://github.com/f5devcentral/container-egress-service/issues) [![Stars](https://img.shields.io/github/stars/f5devcentral/container-egress-service)]() [![Go](https://goreportcard.com/badge/github.com/f5devcentral/container-egress-service)](https://goreportcard.com/report/github.com/f5devcentral/container-egress-service) [![License](https://img.shields.io/github/license/f5devcentral/container-egress-service)](./LICENSE) 
 
-CES is a solution. It is used to help users better manage the outgoing traffic of k8s pod/container. It solves the challenge of outgoing traffic policy control in high dynamic IP scenarios in k8s native way, and provides a wealth of outgoing control capability. And through the hierarchical design, it solves the multi-role coordination problem among enterprise security, network, platform, and application operation departments.
+CES is a solution. It is used to help users manage the outgoing traffic of k8s pod/container better. It solves the challenge of outgoing traffic policy control in high dynamic IP scenarios in k8s native way, and provides a wealth of outgoing control capability. And through the hierarchical design, it solves the multi-role coordination problem among enterprise security, network, platform, and application operation departments.
 
 ## Table of Contents
-- [Background](#background)
-- [Install](#install)
-- [Challenges solved](#Challenges-solved)
-- [Capabilities](#Capabilities)
-- [Documents](#Documents)
-- [Contact](#contact)
-- [License](#license)
+- [Container Egress Services (CES)](#container-egress-services-ces)
+  - [Table of Contents](#table-of-contents)
+  - [Background](#background)
+  - [Install](#install)
+  - [Challenges-solved](#challenges-solved)
+  - [Capabilities](#capabilities)
+  - [Documents](#documents)
+  - [Support](#support)
+  - [Community Code of Conduct](#community-code-of-conduct)
+  - [Contact](#contact)
+  - [License](#license)
 
 
 
@@ -76,7 +80,12 @@ Check [Release notes](https://github.com/f5devcentral/container-egress-service/r
 
 Check the [Wiki](https://github.com/f5devcentral/container-egress-service/wiki) first.
 
+## Support
 
+For support, please open a GitHub issue.  Note, the code in this repository is community supported and is not supported by F5 Networks.  For a complete list of supported projects please reference [SUPPORT.md](SUPPORT.md).
+
+## Community Code of Conduct
+Please refer to the [F5 DevCentral Community Code of Conduct](code_of_conduct.md).
 
 ## Contact
 
