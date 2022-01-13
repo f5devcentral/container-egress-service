@@ -54,7 +54,7 @@ Docker image:
 #GO_VERSION = 1.16
 git clone https://github.com/f5devcentral/container-egress-service.git
 cd container-egress-service
-Make release
+make release
 ```
 
 
