@@ -47,6 +47,8 @@ wget https://raw.githubusercontent.com/f5devcentral/container-egress-service/mas
 
 Please check the [Wiki](https://github.com/f5devcentral/container-egress-service/wiki) for different usages.
 
+Check Youtube or China Bilibili for videos. Click [here](https://github.com/f5devcentral/container-egress-service/wiki/Demo).
+
 ## Building
 
 Docker image:
