@@ -18,3 +18,9 @@ require (
 	k8s.io/klog/v2 v2.10.0
 	k8s.io/kube-openapi v0.0.0-20210817084001-7fbd8d59e5b8 // indirect
 )
+
+replace (
+	github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible => github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/miekg/dns v1.1.25 => github.com/miekg/dns v1.0.14
+	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b => golang.org/x/crypto v0.0.0-20181029021203-45a5f77698d3
+)
