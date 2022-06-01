@@ -52,7 +52,8 @@ jobs:
 
       # Docker login
       - name: docker login
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }}  --password-stdin
+        #run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }}  --password-stdin
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }}  -p ${{ secrets.DOCKERHUB_PASSWORD }}
 
      
       # Get docker tag
