@@ -8,7 +8,6 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/spf13/viper v1.8.1
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	k8s.io/api v0.20.6
 	k8s.io/apimachinery v0.20.6
@@ -20,7 +19,7 @@ require (
 )
 
 replace (
-	github.com/dgrijalva/jwt-go v3.2.1-0.20210802184156-9742bd7fca1c+incompatible => github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/miekg/dns v1.1.25 => github.com/miekg/dns v1.0.14
-	golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b => golang.org/x/crypto v0.0.0-20181029021203-45a5f77698d3
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible => github.com/golang-jwt/jwt v3.2.1+incompatible
+	github.com/miekg/dns v1.0.14 => github.com/miekg/dns v1.1.25
+	golang.org/x/crypto v0.0.0-20181029021203-45a5f77698d3 => golang.org/x/crypto v0.0.0-20220314234659-1baeb1ce4c0b
 )
