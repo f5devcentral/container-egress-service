@@ -46,7 +46,7 @@ namespaces:
 		return fmt.Errorf("No configured Common, please configured, eg: \n%s\n", msg)
 	}
 
-	if getMasterCluster() == GetCluster(){
+	if getMasterCluster() == GetCluster() {
 		as3Str, err := client.Get(DefaultPartition)
 		if err != nil {
 			return fmt.Errorf("failed to get partition, due to: %v", err)
@@ -58,10 +58,12 @@ namespaces:
 	return nil
 }
 
-func initTenantConfig(as3Config As3Config, cesNamespace string){
+func initTenantConfig(as3Config As3Config, cesNamespace string) {
 	//store cluster in sync.Map
 	registValue(schemaVersionKey, as3Config.SchemaVersion)
 	registValue(currentClusterKey, as3Config.ClusterName)
+	//registe cni type
+	registValue(cniTypeKey, as3Config.cniType)
 	if as3Config.MasterCluster == "" {
 		registValue(masterClusterKey, as3Config.ClusterName)
 	} else {
@@ -177,6 +179,15 @@ func getMasterCluster() string {
 	return v.(string)
 }
 
+//cnitype
+func getCniType() string {
+	v := getValue(cniTypeKey)
+	if v == nil {
+		return "kube-ovn"
+	}
+	return v.(string)
+}
+
 func IsSupportRouteDomain() bool {
 	v := getValue(isSupportRouteDomainKey)
 	return v.(bool)
@@ -202,7 +213,7 @@ func getSchemaVersion() string {
 	return v.(string)
 }
 
-func isConfigLogProfile()bool{
+func isConfigLogProfile() bool {
 	if !getLogPool().LoggingEnabled || getLogPool().Template == "" {
 		return false
 	}
@@ -220,7 +231,7 @@ func skipDeleteShareApplicationClassOrAttr(partition, attr string) bool {
 	}
 	shareApp := as3Application{}
 	tntcfg := GetTenantConfigForParttition(partition)
-	ac := newAs3Post(nil, nil, nil,nil,nil,nil, tntcfg)
+	ac := newAs3Post(nil, nil, nil, nil, nil, nil, tntcfg)
 	ac.newLogPoolDecl(shareApp)
 	for k, _ := range shareApp {
 		skipDeleteShareApplicationAttr[k] = true
@@ -233,9 +244,9 @@ func GetIRules() string {
 	return strings.Join(irules, ",")
 }
 
-func GetClusterSvcExtNamespace() string{
+func GetClusterSvcExtNamespace() string {
 	clusterSvcExtNamespace := getValue(clusterSvcExtNamespaceKey)
-	if clusterSvcExtNamespace == nil{
+	if clusterSvcExtNamespace == nil {
 		return "kube-system"
 	}
 	return clusterSvcExtNamespace.(string)

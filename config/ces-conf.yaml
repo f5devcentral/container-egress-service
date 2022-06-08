@@ -4,6 +4,7 @@ isSupportRouteDomain: true
 ##Multi-cluster docking single BIG-IP, controller Common init and remote log
 masterCluster: k8s
 schemaVersion: "3.29.0"
+cniType: "kube-ovn"
 iRule:
   - bwc-1mbps-irule
   - bwc-2mbps-irule

@@ -86,7 +86,7 @@ func newAs3Obj(partition string, shareApplication interface{}) interface{} {
 	tenant[SharedKey] = shareApplication
 	adc[partition] = tenant
 	//remove Common if partition is not Common
-	if IsSupportRouteDomain() && partition != DefaultPartition{
+	if IsSupportRouteDomain() && partition != DefaultPartition {
 		delete(adc, DefaultPartition)
 	}
 	ac[DeclarationKey] = adc
@@ -339,14 +339,14 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 	}
 	//servicePort default is 514
 	numbers := []Member{}
-	if len(log.ServerAddresses) != 0{
-		for _, v :=range log.ServerAddresses{
+	if len(log.ServerAddresses) != 0 {
+		for _, v := range log.ServerAddresses {
 			ips := strings.Split(v, ":")
 			ip := ips[0]
 			port := 514
-			if len(ips)> 1{
+			if len(ips) > 1 {
 				vs, err := strconv.Atoi(ips[1])
-				if err == nil{
+				if err == nil {
 					port = vs
 				}
 			}
@@ -356,7 +356,7 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 				Enable:          true,
 			})
 		}
-	}else {
+	} else {
 		numbers = append(numbers, Member{
 			ServerAddresses: []string{"0.0.0.0"},
 			ServicePort:     514,
@@ -364,7 +364,7 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 		})
 	}
 	sharedApp[getMasterCluster()+"_log_pool"] = &Pool{
-		Class: ClassPoll,
+		Class:   ClassPoll,
 		Members: numbers,
 		Monitors: []Monitor{
 			Monitor{Bigip: fmt.Sprintf("/%s/%s", DefaultPartition, log.HealthMonitor)},
@@ -373,7 +373,7 @@ func (ac *as3Post) newLogPoolDecl(sharedApp as3Application) {
 }
 
 //Create VS ARP
-func(ac *as3Post) newVirtualAddressDecl(sharedApp as3Application){
+func (ac *as3Post) newVirtualAddressDecl(sharedApp as3Application) {
 	virtualAddress := ac.tenantConfig.VirtualService.VirtualAddresses.VirtualAddress
 	if len(virtualAddress) == 0 {
 		virtualAddress = "0.0.0.0"
@@ -381,25 +381,25 @@ func(ac *as3Post) newVirtualAddressDecl(sharedApp as3Application){
 	//Enhance the ARP control ability of VS's virtualaddress
 	//virtualAddress of VA use first value if config one address in VirtualAddresses of VS
 	defaultVa := &VirtualServerVa{
-		Class: ClassServiceAddress,
+		Class:          ClassServiceAddress,
 		VirtualAddress: virtualAddress,
-		IcmpEcho: "disable",
-		ArpEnabled: false,
+		IcmpEcho:       "disable",
+		ArpEnabled:     false,
 	}
 	vaTemplate := ac.tenantConfig.VirtualService.VirtualAddresses.template
-	if strings.TrimSpace(vaTemplate) != ""{
+	if strings.TrimSpace(vaTemplate) != "" {
 		va := map[string]interface{}{}
 		err := validateJSONAndFetchObject(vaTemplate, &va)
-		if err == nil{
+		if err == nil {
 			sharedApp[getAs3VsVaAttr()] = defaultVa
 		}
 	}
-	if _, ok := sharedApp[getAs3VsVaAttr()]; !ok{
+	if _, ok := sharedApp[getAs3VsVaAttr()]; !ok {
 		virtualAddresses := ac.tenantConfig.VirtualService.VirtualAddresses
-		if virtualAddresses.VirtualAddress != ""{
+		if virtualAddresses.VirtualAddress != "" {
 			defaultVa.VirtualAddress = virtualAddresses.VirtualAddress
 		}
-		if virtualAddresses.IcmpEcho != ""{
+		if virtualAddresses.IcmpEcho != "" {
 			defaultVa.IcmpEcho = virtualAddresses.IcmpEcho
 		}
 		defaultVa.ArpEnabled = virtualAddresses.ArpEnabled
@@ -444,7 +444,7 @@ func (ac *as3Post) newServiceDecl(sharedApp as3Application) {
 		Layer4:                 "any",
 		TranslateServerAddress: false,
 		TranslateServerPort:    false,
-		VirtualAddresses:       []Use{
+		VirtualAddresses: []Use{
 			{
 				getAs3UsePathForPartition(ac.tenantConfig.Name, getAs3VsVaAttr()),
 			},
@@ -599,7 +599,9 @@ func (ac *as3Post) dealRule() []ruleData {
 		}
 		for _, ns := range ac.namespaceList.Items {
 			if ns.Name == nsRule.Namespace {
-				rule.srcAddr = []string{ns.Annotations[NamespaceCidr]}
+				if getCniType() == "kube-ovn" {
+					rule.srcAddr = []string{ns.Annotations[NamespaceCidr]}
+				}
 			}
 		}
 		rules = append(rules, rule)
@@ -737,7 +739,7 @@ func getAs3VSAttr() string {
 	return fmt.Sprintf("%s_outbound_vs", getMasterCluster())
 }
 
-func getAs3VsVaAttr() string{
+func getAs3VsVaAttr() string {
 	return fmt.Sprintf("%s_outbound_va", getMasterCluster())
 }
 
@@ -760,7 +762,7 @@ func getAs3UsePathForNamespace(namespace, attr string) string {
 		partition = DefaultPartition
 	} else {
 		tntcfg := GetTenantConfigForNamespace(namespace)
-		if tntcfg == nil{
+		if tntcfg == nil {
 			panic(fmt.Sprintf("Get the current rd configuration of namespace[%s] as nil", namespace))
 		}
 		partition = tntcfg.Name
@@ -1009,9 +1011,9 @@ func policyMergeFullJson(src, delta interface{}, isDelete bool) interface{} {
 		}
 	}
 	//deny all needs to be at the end
-	last := len(srcPolicy.Rules)-1
-	for i := last; i >=0; i-- {
-		if strings.Contains(srcPolicy.Rules[i].Use, getAllDenyRuleListAttr()){
+	last := len(srcPolicy.Rules) - 1
+	for i := last; i >= 0; i-- {
+		if strings.Contains(srcPolicy.Rules[i].Use, getAllDenyRuleListAttr()) {
 			denyAllRule := srcPolicy.Rules[i].Use
 			srcPolicy.Rules[i].Use = srcPolicy.Rules[last].Use
 			srcPolicy.Rules[last].Use = denyAllRule
@@ -1063,7 +1065,7 @@ func clearUpUnreferencePolicy(shareApp map[string]interface{}) {
 		case ClassFirewallAddressList, ClassFirewallPortList:
 			flag2[key] = true
 		case ClassSecurityLogProfile, ClassLogPublisher:
-			if !isConfigLogProfile(){
+			if !isConfigLogProfile() {
 				delete(shareApp, key)
 			}
 		}
