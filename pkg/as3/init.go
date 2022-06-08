@@ -63,7 +63,7 @@ func initTenantConfig(as3Config As3Config, cesNamespace string) {
 	registValue(schemaVersionKey, as3Config.SchemaVersion)
 	registValue(currentClusterKey, as3Config.ClusterName)
 	//registe cni type
-	registValue(cniTypeKey, as3Config.cniType)
+	registValue(cniTypeKey, as3Config.CniType)
 	if as3Config.MasterCluster == "" {
 		registValue(masterClusterKey, as3Config.ClusterName)
 	} else {

@@ -126,6 +126,7 @@ type VirtualServerVa struct {
 type (
 	As3Config struct {
 		SchemaVersion        string         `mapstructure:"schemaVersion"`
+		CniType              string         `mapstructure:"cniType"`
 		ClusterName          string         `mapstructure:"clusterName"`
 		MasterCluster        string         `mapstructure:"masterCluster"`
 		IsSupportRouteDomain bool           `mapstructure:"isSupportRouteDomain"`
