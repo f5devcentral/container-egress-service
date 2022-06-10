@@ -182,6 +182,7 @@ func getMasterCluster() string {
 //cnitype
 func getCniType() string {
 	v := getValue(cniTypeKey)
+	fmt.Printf("failed to get cnitype, value is: %s", v)
 	if v == nil {
 		return "kube-ovn"
 	}
