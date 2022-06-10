@@ -173,7 +173,7 @@ func getLogPool() LogPool {
 
 func getMasterCluster() string {
 	v := getValue(masterClusterKey)
-	if v == nil {
+	if v == nil || v == "" {
 		return GetCluster()
 	}
 	return v.(string)
@@ -182,8 +182,7 @@ func getMasterCluster() string {
 //cnitype
 func getCniType() string {
 	v := getValue(cniTypeKey)
-	klog.Warningf("cnitype from configmap is %s", v)
-	if v == "" {
+	if v == "" || v == nil {
 		return "kube-ovn"
 	}
 	return v.(string)
