@@ -3,7 +3,7 @@ GO_VERSION = 1.16
 
 GITHUBACTIONTRIGGERNUMBER = 11
 
-REGISTRY = myf5
+REGISTRY = f5devcentral
 NAME = ces-controller
 RELEASE_TAG = 0.5.3.2
 COMMIT = git-$(shell git rev-parse --short HEAD)
