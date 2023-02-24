@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/spf13/viper v1.8.1
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	k8s.io/api v0.20.6
 	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v0.20.6
