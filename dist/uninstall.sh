@@ -21,6 +21,7 @@ kubectl delete --ignore-not-found crd externalservices.kubeovn.io
 kubectl delete --ignore-not-found crd clusteregressrules.kubeovn.io
 kubectl delete --ignore-not-found crd namespaceegressrules.kubeovn.io
 kubectl delete --ignore-not-found crd serviceegressrules.kubeovn.io
+kubectl delete --ignore-not-found crd externaliprules.bigip.io
 echo "-------------------------------"
 echo ""
 

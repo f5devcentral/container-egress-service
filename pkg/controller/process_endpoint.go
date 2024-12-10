@@ -67,6 +67,7 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 	ep, err := c.endpointsLister.Endpoints(namespace).Get(name)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// todo: 清空as3 ip列表和端口列表?
 			klog.Errorf("endpoint [%s/%s] not found", namespace, name)
 			return nil
 		}
@@ -78,35 +79,71 @@ func (c *Controller) endpointsSyncHandler(key string, endpoints *corev1.Endpoint
 			c.recorder.Event(ep, corev1.EventTypeWarning, err.Error(), MessageResourceFailedSynced)
 		}
 	}()
+
+	as3BigIPAddressList := getBigIpAddressListFromEndpoint(ep)
+
 	as3Rules, err := c.seviceEgressRuleLister.ServiceEgressRules(namespace).List(labels.Everything())
 	if err != nil {
 		klog.Errorf("failed to list BIG-IP service egress rules: %v", err)
 		return err
 	}
+	// 查找ep命名空间下的eipRule
+	eipRules, err := c.externalIPRuleLister.ExternalIPRules(ep.Namespace).List(labels.Everything())
+	if err != nil {
+		klog.Errorf("failed to list BIG-IP external ip rules: %v", err)
+		return err
+	}
+
 	nameInRule := name
 	for _, rule := range as3Rules {
 		if rule.Spec.Service == nameInRule {
-			//Due to frequent ip update,so BIG-IP native interface is used
-			patchItems := as3.BigIpAddressList{}
-			//get src ip
-			for _, subset := range ep.Subsets {
-				for _, addr := range subset.Addresses {
-					patchItem := as3.BigIpAddresses{
-						Name: addr.IP,
-					}
-					patchItems.Addresses = append(patchItems.Addresses, patchItem)
-				}
-			}
-			if len(patchItems.Addresses) == 0 {
+			if len(as3BigIPAddressList.Addresses) == 0 {
 				err = fmt.Errorf("endpoint[%s] subsets.addresses is nil", key)
 				klog.Error(err)
 				return err
 			}
 			klog.Infof("===============================>start sync endpoints[%s/%s]", namespace, name)
-			c.as3Client.UpdateBigIPSourceAddress(patchItems, nsConfig, namespace, rule.Name, ep.Name)
-			klog.Infof("===============================>end sync endpoints[%s/%s]", namespace, name)
+			if err = c.as3Client.UpdateBigIPSourceAddress(as3BigIPAddressList, nsConfig, namespace, rule.Name, ep.Name); err != nil {
+				klog.Warningf("===============================>end sync endpoints[%s/%s] failed: %s", namespace, name, err.Error())
+			} else {
+				klog.Infof("===============================>end sync endpoints[%s/%s] success", namespace, name)
+			}
 			break
 		}
 	}
+
+	for _, eipRule := range eipRules {
+		for _, svcName := range eipRule.Spec.Services {
+			if svcName != ep.Name {
+				continue
+			}
+
+			if len(as3BigIPAddressList.Addresses) == 0 {
+				err := fmt.Errorf("endpoint[%s] subsets.addresses is nil", key)
+				klog.Error(err)
+				return err
+			}
+
+			klog.Infof("===============================>start sync eipRule endpoints[%s/%s]", namespace, name)
+			if err = c.as3Client.UpdateBigIPSnatSourceAddress(as3BigIPAddressList, nsConfig, namespace, eipRule.Name, ep.Name); err != nil {
+				klog.Warningf("===============================>end sync eipRule endpoints[%s/%s] failed: %s", namespace, name, err.Error())
+			} else {
+				klog.Infof("===============================>end sync eipRule endpoints[%s/%s] success", namespace, name)
+			}
+		}
+	}
+
 	return nil
+}
+
+func getBigIpAddressListFromEndpoint(ep *corev1.Endpoints) as3.BigIpAddressList {
+	var list as3.BigIpAddressList
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			list.Addresses = append(list.Addresses, as3.BigIpAddresses{
+				Name: addr.IP,
+			})
+		}
+	}
+	return list
 }

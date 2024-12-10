@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	snat "github.com/kubeovn/ces-controller/pkg/apis/bigip.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
@@ -12,13 +13,14 @@ import (
 
 func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, namespaceEgressList *v1alpha1.NamespaceEgressRuleList,
 	clusterEgressList *v1alpha1.ClusterEgressRuleList, externalServiceList *v1alpha1.ExternalServiceList,
+	externalIPRuleList *snat.ExternalIPRuleList,
 	endpointList *corev1.EndpointsList, namespaceList *corev1.NamespaceList, tenantConfig *TenantConfig,
 	ty string, isDelete bool) error {
 	//Full synchronization will cause the latest data to be updated
 	c.Lock()
 	defer c.Unlock()
-	as3PostParam := newAs3Post(serviceEgressList, namespaceEgressList, clusterEgressList, externalServiceList, endpointList,
-		namespaceList, tenantConfig)
+	as3PostParam := newAs3Post(serviceEgressList, namespaceEgressList, clusterEgressList, externalServiceList, externalIPRuleList,
+		endpointList, namespaceList, tenantConfig)
 	deltaAdc := as3ADC{}
 	as3PostParam.generateAS3ResourceDeclaration(deltaAdc)
 	partition := tenantConfig.Name
@@ -32,7 +34,7 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 		return err
 	}
 	reqBody := fullResource(partition, isDelete, srcAdc, deltaAdc)
-	if reqBody == nil{
+	if reqBody == nil {
 		klog.Info("as3 is not update")
 		return nil
 	}
@@ -109,8 +111,7 @@ func (c *Client) As3Request(serviceEgressList *v1alpha1.ServiceEgressRuleList, n
 	return nil
 }
 
-func (c *Client) UpdateBigIPSourceAddress(addrList BigIpAddressList, tntcfg *TenantConfig, namespace, ruleName, svcName string) error {
-	srcAddressAttr := getAs3SrcAddressAttr("svc", namespace, ruleName, svcName)
+func (c *Client) updateBigIPSourceAddress(addrList BigIpAddressList, tntcfg *TenantConfig, srcAddressAttr string) error {
 	url := fmt.Sprintf("/mgmt/tm/security/firewall/address-list/~%s~Shared~%s", tntcfg.Name, srcAddressAttr)
 	if tntcfg.RouteDomain.Id != 0 {
 		for k := range addrList.Addresses {
@@ -124,6 +125,16 @@ func (c *Client) UpdateBigIPSourceAddress(addrList BigIpAddressList, tntcfg *Ten
 	}
 	go process()
 	return nil
+}
+
+func (c *Client) UpdateBigIPSourceAddress(addrList BigIpAddressList, tntcfg *TenantConfig, namespace, ruleName, svcName string) error {
+	srcAddressAttr := getAs3SrcAddressAttr("svc", namespace, ruleName, svcName)
+	return c.updateBigIPSourceAddress(addrList, tntcfg, srcAddressAttr)
+}
+
+func (c *Client) UpdateBigIPSnatSourceAddress(addrList BigIpAddressList, tntcfg *TenantConfig, namespace, ruleName, svcName string) error {
+	srcAddressAttr := getAs3SrcAddressAttr("snat", namespace, ruleName, svcName)
+	return c.updateBigIPSourceAddress(addrList, tntcfg, srcAddressAttr)
 }
 
 type syncFrequency struct {
@@ -155,7 +166,7 @@ func (c *Client) frequency() {
 	}
 }
 
-func (c *Client)Work(){
+func (c *Client) Work() {
 	go func() {
 		for {
 			c.frequency()
@@ -164,7 +175,7 @@ func (c *Client)Work(){
 	}()
 }
 
-func process(){
+func process() {
 	syncFq.lock.Lock()
 	defer syncFq.lock.Unlock()
 	syncFq.updateTimes = append(syncFq.updateTimes, time.Now())

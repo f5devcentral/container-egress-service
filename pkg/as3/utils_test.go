@@ -1937,7 +1937,7 @@ func TestMockClusteEgressRule(t *testing.T) {
 	initTenantConfig(as3cfg, "kube-system")
 	tntcfg := GetTenantConfigForParttition(DefaultPartition)
 
-	as3post := newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	as3post := newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, nil, tntcfg)
 	as3 := initDefaultAS3()
 	printObj(as3)
 	srcAdc := as3[DeclarationKey].(as3ADC)
@@ -2007,7 +2007,7 @@ func TestMockClusteEgressRule(t *testing.T) {
 			},
 		},
 	}
-	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, nil, tntcfg)
 	deltaAdc := as3ADC{}
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
 
@@ -2063,7 +2063,7 @@ func TestMockClusteEgressRule(t *testing.T) {
 			},
 		},
 	}
-	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, nil, tntcfg)
 	deltaAdc = as3ADC{}
 	srcAs3 = map[string]interface{}{}
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
@@ -2086,7 +2086,7 @@ func TestMockClusteEgressRule(t *testing.T) {
 	printObj(body)
 
 	//delete only one clusteregressrule
-	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &clusterEgressList, &externalServiceList, nil, nil, nil, tntcfg)
 	srcAdc = as3ADC{}
 	deltaAdc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(srcAdc)
@@ -2214,7 +2214,7 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 	initTenantConfig(as3cfg, "kube-system")
 	tntcfg := GetTenantConfigForParttition(DefaultPartition)
 
-	as3post := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
+	as3post := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, nil, &namespaceList, tntcfg)
 
 	as3 := initDefaultAS3()
 	printObj(as3)
@@ -2247,7 +2247,7 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 	as3cfg.IsSupportRouteDomain = true
 	initTenantConfig(as3cfg, "kube-system")
 	tntcfg = GetTenantConfigForParttition("project1")
-	as3post = newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
+	as3post = newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, nil, &namespaceList, tntcfg)
 	deltaAdc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
 	body = fullResource("project1", false, srcAdc, deltaAdc)
@@ -2332,7 +2332,7 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 		},
 	}
 	tntcfg = GetTenantConfigForParttition(DefaultPartition)
-	as3post1 := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, &namespaceList, tntcfg)
+	as3post1 := newAs3Post(nil, &namespaceEgressRuleList, nil, &externalServiceList, nil, nil, &namespaceList, tntcfg)
 	deltaAdc = as3ADC{}
 	as3post1.generateAS3ResourceDeclaration(deltaAdc)
 	body = fullResource("Common", false, srcAdc, deltaAdc)
@@ -2342,18 +2342,18 @@ func TestMockNamespaceEgressRule(t *testing.T) {
 	printObj(body)
 }
 
-func TestMockServiceEgressRule(t *testing.T){
+func TestMockServiceEgressRule(t *testing.T) {
 	svcgrList := kubeovnv1alpha1.ServiceEgressRuleList{
 		Items: []kubeovnv1alpha1.ServiceEgressRule{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "svcgr",
+					Name:      "svcgr",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ServiceEgressRuleSpec{
-					Action: "accept",
-					Logging: true,
-					Service: "test",
+					Action:           "accept",
+					Logging:          true,
+					Service:          "test",
 					ExternalServices: []string{"exsvc"},
 				},
 			},
@@ -2363,7 +2363,7 @@ func TestMockServiceEgressRule(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc",
+					Name:      "exsvc",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2372,9 +2372,9 @@ func TestMockServiceEgressRule(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "udp-9090",
-							Protocol: "udp",
-							Port: "9090",
+							Name:      "udp-9090",
+							Protocol:  "udp",
+							Port:      "9090",
 							Bandwidth: "bwc-2mbps-irule",
 						},
 					},
@@ -2388,7 +2388,7 @@ func TestMockServiceEgressRule(t *testing.T){
 		IsSupportRouteDomain: false,
 		Tenant: []TenantConfig{
 			{
-				Name: "Common",
+				Name:       "Common",
 				Namespaces: "dwb-test",
 				RouteDomain: RouteDomain{
 					Name: "0",
@@ -2406,7 +2406,7 @@ func TestMockServiceEgressRule(t *testing.T){
 		Items: []corev1.Endpoints{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
+					Name:      "test",
 					Namespace: "dwb-test",
 				},
 				Subsets: []corev1.EndpointSubset{
@@ -2428,13 +2428,13 @@ func TestMockServiceEgressRule(t *testing.T){
 	validateJSONAndFetchObject(adc, &srcAdc)
 	tntcfg := GetTenantConfigForParttition("dwb-test")
 	deltaSrc := as3ADC{}
-	post := newAs3Post(&svcgrList, nil, nil, &exsvcList, &epList, nil, tntcfg)
+	post := newAs3Post(&svcgrList, nil, nil, &exsvcList, nil, &epList, nil, tntcfg)
 	post.generateAS3ResourceDeclaration(deltaSrc)
 	body := fullResource(DefaultPartition, false, srcAdc, deltaSrc)
 	printObj(body)
 }
 
-func TestMockExtenalService(t *testing.T){
+func TestMockExtenalService(t *testing.T) {
 	cgRuleList := kubeovnv1alpha1.ClusterEgressRuleList{
 		Items: []kubeovnv1alpha1.ClusterEgressRule{
 			{
@@ -2456,8 +2456,8 @@ func TestMockExtenalService(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-				    Name: "exsvc1",
-				    Namespace: "dwb-test",
+					Name:      "exsvc1",
+					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
 					Addresses: []string{
@@ -2465,9 +2465,9 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "xxx",
+							Name:     "xxx",
 							Protocol: "tcp",
-							Port: "8080",
+							Port:     "8080",
 						},
 					},
 				},
@@ -2496,10 +2496,10 @@ func TestMockExtenalService(t *testing.T){
 	tntcfg := GetTenantConfigForParttition(DefaultPartition)
 	as3 := initDefaultAS3()
 	adc := as3[DeclarationKey].(as3ADC)
-	as3post := newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	as3post := newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	as3post.generateAS3ResourceDeclaration(adc)
 	deltaAdc := as3ADC{}
-    as3post.generateAS3ResourceDeclaration(deltaAdc)
+	as3post.generateAS3ResourceDeclaration(deltaAdc)
 	printObj(deltaAdc)
 	//delete exsvc
 	body := fullResource("Common", true, adc, deltaAdc)
@@ -2511,7 +2511,7 @@ func TestMockExtenalService(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc1",
+					Name:      "exsvc1",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2520,13 +2520,13 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "tcp-8080",
+							Name:     "tcp-8080",
 							Protocol: "tcp",
-							Port: "8080",
-						},{
-							Name: "tcp-443",
-							Protocol: "tcp",
-							Port: "443",
+							Port:     "8080",
+						}, {
+							Name:      "tcp-443",
+							Protocol:  "tcp",
+							Port:      "443",
 							Bandwidth: "bwc-1mbps-irule",
 						},
 					},
@@ -2534,7 +2534,7 @@ func TestMockExtenalService(t *testing.T){
 			},
 		},
 	}
-	as3post = newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	as3post = newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	adc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
 	printObj(adc)
@@ -2545,7 +2545,7 @@ func TestMockExtenalService(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc1",
+					Name:      "exsvc1",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2556,7 +2556,7 @@ func TestMockExtenalService(t *testing.T){
 			},
 		},
 	}
-	as3post = newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	as3post = newAs3Post(&svcRuleList, &nsRuleList, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	adc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
 	printObj(adc)
@@ -2574,7 +2574,7 @@ func TestMockExtenalService(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc1",
+					Name:      "exsvc1",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2583,14 +2583,14 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "udp-81",
-							Protocol: "udp",
-							Port: "81-91",
+							Name:      "udp-81",
+							Protocol:  "udp",
+							Port:      "81-91",
 							Bandwidth: "bwc-2mbps-irule",
-						},{
-							Name: "tcp-443",
-							Protocol: "tcp",
-							Port: "443",
+						}, {
+							Name:      "tcp-443",
+							Protocol:  "tcp",
+							Port:      "443",
 							Bandwidth: "bwc-1mbps-irule",
 						},
 					},
@@ -2614,14 +2614,14 @@ func TestMockExtenalService(t *testing.T){
 			},
 		},
 	}
-	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	adc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
 	exsvcList = kubeovnv1alpha1.ExternalServiceList{
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc1",
+					Name:      "exsvc1",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2630,14 +2630,14 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "tcp-81",
-							Protocol: "TCP",
-							Port: "81-91",
+							Name:      "tcp-81",
+							Protocol:  "TCP",
+							Port:      "81-91",
 							Bandwidth: "bwc-2mbps-irule",
-						},{
-							Name: "tcp-443",
-							Protocol: "tcp",
-							Port: "443",
+						}, {
+							Name:      "tcp-443",
+							Protocol:  "tcp",
+							Port:      "443",
 							Bandwidth: "bwc-1mbps-irule",
 						},
 					},
@@ -2645,7 +2645,7 @@ func TestMockExtenalService(t *testing.T){
 			},
 		},
 	}
-	as3post =  newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	deltaAdc = as3ADC{}
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
 	body = fullResource(DefaultPartition, false, adc, deltaAdc)
@@ -2657,7 +2657,7 @@ func TestMockExtenalService(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc1",
+					Name:      "exsvc1",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2666,14 +2666,14 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "udp-81",
-							Protocol: "udp",
-							Port: "81-91",
+							Name:      "udp-81",
+							Protocol:  "udp",
+							Port:      "81-91",
 							Bandwidth: "bwc-2mbps-irule",
-						},{
-							Name: "tcp-443",
-							Protocol: "tcp",
-							Port: "443",
+						}, {
+							Name:      "tcp-443",
+							Protocol:  "tcp",
+							Port:      "443",
 							Bandwidth: "bwc-1mbps-irule",
 						},
 					},
@@ -2681,7 +2681,7 @@ func TestMockExtenalService(t *testing.T){
 			},
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc2",
+					Name:      "exsvc2",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2690,9 +2690,9 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "udp-9090",
-							Protocol: "udp",
-							Port: "9090",
+							Name:      "udp-9090",
+							Protocol:  "udp",
+							Port:      "9090",
 							Bandwidth: "bwc-2mbps-irule",
 						},
 					},
@@ -2700,7 +2700,7 @@ func TestMockExtenalService(t *testing.T){
 			},
 		},
 	}
-	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList,nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	adc, deltaAdc = as3ADC{}, as3ADC{}
 	as3post.generateAS3ResourceDeclaration(adc)
 	printObj(adc)
@@ -2708,7 +2708,7 @@ func TestMockExtenalService(t *testing.T){
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc2",
+					Name:      "exsvc2",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2717,9 +2717,9 @@ func TestMockExtenalService(t *testing.T){
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "udp-9090",
-							Protocol: "udp",
-							Port: "9090",
+							Name:      "udp-9090",
+							Protocol:  "udp",
+							Port:      "9090",
 							Bandwidth: "bwc-2mbps-irule",
 						},
 					},
@@ -2728,7 +2728,7 @@ func TestMockExtenalService(t *testing.T){
 		},
 	}
 
-	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList,nil, nil, tntcfg)
+	as3post = newAs3Post(nil, nil, &cgRuleList, &exsvcList, nil, nil, nil, tntcfg)
 	as3post.generateAS3ResourceDeclaration(deltaAdc)
 	printObj(deltaAdc)
 
@@ -2743,8 +2743,8 @@ func TestRomteLog(t *testing.T) {
 		IsSupportRouteDomain: false,
 		LogPool: LogPool{
 			EnableRemoteLog: false,
-			LoggingEnabled: true,
-			HealthMonitor: "udp",
+			LoggingEnabled:  true,
+			HealthMonitor:   "udp",
 			ServerAddresses: []string{"1.1.1.1:8888"},
 			Template: `
 {
@@ -2912,8 +2912,7 @@ func TestNewAddress(t *testing.T) {
 	printObj(app)
 }
 
-
-func TestLogLevel(t *testing.T){
+func TestLogLevel(t *testing.T) {
 	klog.InitFlags(nil)
 	flag.Set("v", "3")
 	klog.Infof("xxx")
@@ -2922,20 +2921,19 @@ func TestLogLevel(t *testing.T){
 	klog.Errorf("error log")
 }
 
-
 func TestSupportRouteDomain(t *testing.T) {
 
 	svcgrList := kubeovnv1alpha1.ServiceEgressRuleList{
 		Items: []kubeovnv1alpha1.ServiceEgressRule{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "svcgr",
+					Name:      "svcgr",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ServiceEgressRuleSpec{
-					Action: "accept",
-					Logging: true,
-					Service: "test",
+					Action:           "accept",
+					Logging:          true,
+					Service:          "test",
 					ExternalServices: []string{"exsvc"},
 				},
 			},
@@ -2945,7 +2943,7 @@ func TestSupportRouteDomain(t *testing.T) {
 		Items: []kubeovnv1alpha1.ExternalService{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "exsvc",
+					Name:      "exsvc",
 					Namespace: "dwb-test",
 				},
 				Spec: kubeovnv1alpha1.ExternalServiceSpec{
@@ -2954,9 +2952,9 @@ func TestSupportRouteDomain(t *testing.T) {
 					},
 					Ports: []kubeovnv1alpha1.ExternalServicePort{
 						{
-							Name: "udp-9090",
-							Protocol: "udp",
-							Port: "9090",
+							Name:      "udp-9090",
+							Protocol:  "udp",
+							Port:      "9090",
 							Bandwidth: "bwc-2mbps-irule",
 						},
 					},
@@ -2981,7 +2979,7 @@ func TestSupportRouteDomain(t *testing.T) {
 				},
 			},
 			{
-				Name: "dwb-test",
+				Name:       "dwb-test",
 				Namespaces: "dwb-test",
 				RouteDomain: RouteDomain{
 					Name: "rd1",
@@ -2990,8 +2988,8 @@ func TestSupportRouteDomain(t *testing.T) {
 				VirtualService: VirtualService{
 					VirtualAddresses: VirtualAddresses{
 						VirtualAddress: "1.1.1.1",
-						IcmpEcho: "disable",
-						ArpEnabled: true,
+						IcmpEcho:       "disable",
+						ArpEnabled:     true,
 					},
 				},
 				Gwpool: Gwpool{
@@ -3005,7 +3003,7 @@ func TestSupportRouteDomain(t *testing.T) {
 		Items: []corev1.Endpoints{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
+					Name:      "test",
 					Namespace: "dwb-test",
 				},
 				Subsets: []corev1.EndpointSubset{
@@ -3025,7 +3023,7 @@ func TestSupportRouteDomain(t *testing.T) {
 	//as3 := initDefaultAS3()
 	adc := as3ADC{}
 	printObj(adc)
-	post := newAs3Post(&svcgrList, nil, nil, &exsvcList, &epList, nil, tntcfg)
+	post := newAs3Post(&svcgrList, nil, nil, &exsvcList, nil, &epList, nil, tntcfg)
 	delta := as3ADC{}
 	post.generateAS3ResourceDeclaration(delta)
 	printObj(delta)

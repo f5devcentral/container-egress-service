@@ -15,16 +15,18 @@ const (
 	ClassTenant      = "Tenant"
 
 	// AS3 classes
-	ClassFirewallAddressList = "Firewall_Address_List"
-	ClassFirewallPortList    = "Firewall_Port_List"
-	ClassFirewallRuleList    = "Firewall_Rule_List"
-	ClassFirewallPolicy      = "Firewall_Policy"
-	ClassVirtualServerL4     = "Service_L4"
-	ClassServiceAddress      = "Service_Address"
-	ClassPoll                = "Pool"
-	ClassSecurityLogProfile  = "Security_Log_Profile"
-	ClassLogPublisher        = "Log_Publisher"
-	ClassLogDestination      = "Log_Destination"
+	ClassFirewallAddressList  = "Firewall_Address_List"
+	ClassFirewallPortList     = "Firewall_Port_List"
+	ClassFirewallRuleList     = "Firewall_Rule_List"
+	ClassFirewallPolicy       = "Firewall_Policy"
+	ClassVirtualServerL4      = "Service_L4"
+	ClassServiceAddress       = "Service_Address"
+	ClassPoll                 = "Pool"
+	ClassSecurityLogProfile   = "Security_Log_Profile"
+	ClassLogPublisher         = "Log_Publisher"
+	ClassLogDestination       = "Log_Destination"
+	ClassNatPolicy            = "NAT_Policy"
+	ClassNatSourceTranslation = "NAT_Source_Translation"
 )
 
 const (
@@ -59,8 +61,8 @@ const (
 )
 
 const (
-	NamespaceCidr          = "ovn.kubernetes.io/cidr"
+	NamespaceCidr = "ovn.kubernetes.io/cidr"
 )
 
-//eg: Common/Shared/k8s
+// eg: Common/Shared/k8s
 const pathProfix = "/%s/Shared/%s"

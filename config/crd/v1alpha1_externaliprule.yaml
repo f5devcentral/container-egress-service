@@ -1,0 +1,68 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: externaliprules.bigip.io
+spec:
+  scope: Namespaced
+  group: bigip.io
+  names:
+    kind: ExternalIPRule
+    listKind: ExternalIPRuleList
+    plural: externaliprules
+    singular: externaliprule
+    shortNames:
+      - eipr
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      additionalPrinterColumns:
+        - name: ExternalIP
+          type: string
+          jsonPath: .spec.externalAddresses
+        - name: Services
+          type: string
+          jsonPath: .spec.services
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - externalAddresses
+                - services
+              properties:
+                externalAddresses:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                destinationMatch:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    addresses:
+                      type: array
+                      items:
+                        type: string
+                    destinationMatchPorts:
+                      type: object
+                      properties:
+                        protocol:
+                          type: string
+                          enum:
+                            - tcp
+                            - udp
+                        ports:
+                          type: array
+                          items:
+                            type: string
+                            pattern: "^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$"
+                services:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1

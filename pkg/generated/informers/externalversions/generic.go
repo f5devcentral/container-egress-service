@@ -21,7 +21,8 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha1 "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
+	v1alpha1 "github.com/kubeovn/ces-controller/pkg/apis/bigip.io/v1alpha1"
+	kubeovniov1alpha1 "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -52,14 +53,18 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=kubeovn.io/v1alpha1, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("clusteregressrules"):
+	// Group=bigip.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("externaliprules"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Bigip().V1alpha1().ExternalIPRules().Informer()}, nil
+
+		// Group=kubeovn.io/v1alpha1, Version=v1alpha1
+	case kubeovniov1alpha1.SchemeGroupVersion.WithResource("clusteregressrules"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeovn().V1alpha1().ClusterEgressRules().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("externalservices"):
+	case kubeovniov1alpha1.SchemeGroupVersion.WithResource("externalservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeovn().V1alpha1().ExternalServices().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("namespaceegressrules"):
+	case kubeovniov1alpha1.SchemeGroupVersion.WithResource("namespaceegressrules"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeovn().V1alpha1().NamespaceEgressRules().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("serviceegressrules"):
+	case kubeovniov1alpha1.SchemeGroupVersion.WithResource("serviceegressrules"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeovn().V1alpha1().ServiceEgressRules().Informer()}, nil
 
 	}

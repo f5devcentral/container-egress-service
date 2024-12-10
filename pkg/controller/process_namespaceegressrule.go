@@ -118,14 +118,14 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		}
 
 		//delete ruleType
-		if isDelete{
+		if isDelete {
 			delete(exsvc.Labels, as3.RuleTypeLabel)
 			_, err := c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
 				metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
-		}else {
+		} else {
 			if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeNamespace {
 				exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeNamespace
 				_, err := c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
@@ -137,7 +137,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
 	}
-	if len(externalServicesList.Items) == 0{
+	if len(externalServicesList.Items) == 0 {
 		klog.Warningf("ExternalServices is not found in namespaceEgressRules[%s/%s], no need synchronize", rule.Namespace, rule.Name)
 		return nil
 	}
@@ -155,7 +155,7 @@ func (c *Controller) namespaceEgressRuleSyncHandler(key string, rule *kubeovn.Na
 		},
 	}
 	tntcfg := as3.GetTenantConfigForNamespace(namespace)
-	err = c.as3Client.As3Request(nil, &namespaceEgressruleList, nil, &externalServicesList, nil, &namespaceList,
+	err = c.as3Client.As3Request(nil, &namespaceEgressruleList, nil, &externalServicesList, nil, nil, &namespaceList,
 		tntcfg, as3.RuleTypeNamespace, isDelete)
 	if err != nil {
 		klog.Error(err)

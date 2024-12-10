@@ -24,6 +24,7 @@ import (
 	time "time"
 
 	versioned "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned"
+	bigipio "github.com/kubeovn/ces-controller/pkg/generated/informers/externalversions/bigip.io"
 	internalinterfaces "github.com/kubeovn/ces-controller/pkg/generated/informers/externalversions/internalinterfaces"
 	kubeovnio "github.com/kubeovn/ces-controller/pkg/generated/informers/externalversions/kubeovn.io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -172,7 +173,12 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Bigip() bigipio.Interface
 	Kubeovn() kubeovnio.Interface
+}
+
+func (f *sharedInformerFactory) Bigip() bigipio.Interface {
+	return bigipio.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Kubeovn() kubeovnio.Interface {

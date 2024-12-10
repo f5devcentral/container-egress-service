@@ -97,14 +97,14 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 			exsvc.Labels = make(map[string]string, 1)
 		}
 		//delete ruleType
-		if isDelete{
+		if isDelete {
 			delete(exsvc.Labels, as3.RuleTypeLabel)
 			_, err := c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
 				metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
-		}else{
+		} else {
 			if exsvc.Labels[as3.RuleTypeLabel] != as3.RuleTypeGlobal {
 				exsvc.Labels[as3.RuleTypeLabel] = as3.RuleTypeGlobal
 				_, err := c.as3clientset.KubeovnV1alpha1().ExternalServices(exsvc.Namespace).Update(context.Background(), exsvc,
@@ -116,7 +116,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		}
 		externalServicesList.Items = append(externalServicesList.Items, *exsvc)
 	}
-	if len(externalServicesList.Items) == 0{
+	if len(externalServicesList.Items) == 0 {
 		klog.Warningf("ExternalServices is not found in clusterEgressRule[%s/%s], no need synchronize", rule.Namespace, rule.Name)
 		return nil
 	}
@@ -134,7 +134,7 @@ func (c *Controller) f5ClusterEgressRuleSyncHandler(key string, rule *kubeovn.Cl
 		},
 	}
 	tntcfg := as3.GetTenantConfigForParttition(as3.DefaultPartition)
-	err = c.as3Client.As3Request(nil, nil, &clusterEgressruleList, &externalServicesList, nil, nil,
+	err = c.as3Client.As3Request(nil, nil, &clusterEgressruleList, &externalServicesList, nil, nil, nil,
 		tntcfg, as3.RuleTypeGlobal, isDelete)
 	if err != nil {
 		klog.Error(err)

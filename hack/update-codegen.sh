@@ -27,5 +27,12 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 bash "${CODEGEN_PKG}"/generate-groups.sh all \
   github.com/kubeovn/ces-controller/pkg/generated github.com/kubeovn/ces-controller/pkg/apis \
-  kubeovn.io:v1alpha1 \
---go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
+  "kubeovn.io:v1alpha1 bigip.io:v1alpha1" \
+  --output-base "$(dirname "${BASH_SOURCE[0]}")/../../../.." \
+  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
+
+bash "${CODEGEN_PKG}"/generate-internal-groups.sh defaulter \
+  github.com/kubeovn/ces-controller/pkg/generated github.com/kubeovn/ces-controller/pkg/apis github.com/kubeovn/ces-controller/pkg/apis \
+  bigip.io:v1alpha1 \
+  --output-base "$(dirname "${BASH_SOURCE[0]}")/../../../.." \
+  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt

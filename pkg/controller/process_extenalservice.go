@@ -187,7 +187,7 @@ func (c *Controller) externalServiceSyncHandler(key string, service *kubeovn.Ext
 		klog.Info("not found Associated rules，don,t neet sync!!")
 		return nil
 	}
-	err = c.as3Client.As3Request(&serviceEgressRuleList, &namespaceEgressRuleList, &clusterEgressruleList, &externalServicesList, &endpointList, &namespaceList,
+	err = c.as3Client.As3Request(&serviceEgressRuleList, &namespaceEgressRuleList, &clusterEgressruleList, &externalServicesList, nil, &endpointList, &namespaceList,
 		tntcfg, ruleType, isDelete)
 	if err != nil {
 		klog.Error(err)

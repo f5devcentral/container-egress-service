@@ -2,3 +2,4 @@ dist/ces-controller
 .idea
 .vscode
 .DS_Store
+cmd/ces/test_data

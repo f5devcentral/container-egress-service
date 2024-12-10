@@ -85,3 +85,23 @@ spec:
   service: mysql-service
   externalServices:
     - exsvc4
+
+---
+apiVersion: bigip.io/v1alpha1
+kind: ExternalIPRule
+metadata:
+  name: busybox-test-rule
+  namespace: default
+spec:
+  externalAddresses:
+    - 192.168.21.68
+  destinationMatch:
+    name: win-ng
+    addresses:
+      - "1.2.3.4"
+    destinationMatchPorts:
+      protocol: "tcp"
+      ports: 
+        - "80"
+  services: 
+    - busybox-svc

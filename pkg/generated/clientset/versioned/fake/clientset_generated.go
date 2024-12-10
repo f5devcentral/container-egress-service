@@ -20,6 +20,8 @@ package fake
 
 import (
 	clientset "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned"
+	bigipv1alpha1 "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned/typed/bigip.io/v1alpha1"
+	fakebigipv1alpha1 "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned/typed/bigip.io/v1alpha1/fake"
 	kubeovnv1alpha1 "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned/typed/kubeovn.io/v1alpha1"
 	fakekubeovnv1alpha1 "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned/typed/kubeovn.io/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -75,6 +77,11 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// BigipV1alpha1 retrieves the BigipV1alpha1Client
+func (c *Clientset) BigipV1alpha1() bigipv1alpha1.BigipV1alpha1Interface {
+	return &fakebigipv1alpha1.FakeBigipV1alpha1{Fake: &c.Fake}
+}
 
 // KubeovnV1alpha1 retrieves the KubeovnV1alpha1Client
 func (c *Clientset) KubeovnV1alpha1() kubeovnv1alpha1.KubeovnV1alpha1Interface {

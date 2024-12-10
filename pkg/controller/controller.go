@@ -34,11 +34,14 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
+	snat "github.com/kubeovn/ces-controller/pkg/apis/bigip.io/v1alpha1"
 	kubeovn "github.com/kubeovn/ces-controller/pkg/apis/kubeovn.io/v1alpha1"
 	"github.com/kubeovn/ces-controller/pkg/as3"
 	clientset "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned"
 	as3scheme "github.com/kubeovn/ces-controller/pkg/generated/clientset/versioned/scheme"
+	snatinformers "github.com/kubeovn/ces-controller/pkg/generated/informers/externalversions/bigip.io/v1alpha1"
 	informers "github.com/kubeovn/ces-controller/pkg/generated/informers/externalversions/kubeovn.io/v1alpha1"
+	snatlisters "github.com/kubeovn/ces-controller/pkg/generated/listers/bigip.io/v1alpha1"
 	listers "github.com/kubeovn/ces-controller/pkg/generated/listers/kubeovn.io/v1alpha1"
 )
 
@@ -79,6 +82,11 @@ type Controller struct {
 	seviceEgressRuleWorkqueue    workqueue.RateLimitingInterface
 	recorder                     record.EventRecorder
 	as3Client                    *as3.Client
+
+	// snat相关
+	externalIPRuleLister    snatlisters.ExternalIPRuleLister
+	externalIPRuleSynced    cache.InformerSynced
+	externalIPRuleWorkQueue workqueue.RateLimitingInterface
 }
 
 // NewController returns a new CES controller
@@ -90,6 +98,7 @@ func NewController(
 	clusterEgressRuleInformer informers.ClusterEgressRuleInformer,
 	namespaceEgressRuleInformer informers.NamespaceEgressRuleInformer,
 	seviceEgressRuleInformer informers.ServiceEgressRuleInformer,
+	externalIPRuleInformer snatinformers.ExternalIPRuleInformer,
 	as3Client *as3.Client) *Controller {
 
 	utilruntime.Must(as3scheme.AddToScheme(scheme.Scheme))
@@ -119,6 +128,10 @@ func NewController(
 		seviceEgressRuleWorkqueue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "SeviceEgressRules"),
 		recorder:                     recorder,
 		as3Client:                    as3Client,
+
+		externalIPRuleLister:    externalIPRuleInformer.Lister(),
+		externalIPRuleSynced:    externalIPRuleInformer.Informer().HasSynced,
+		externalIPRuleWorkQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ExternalIPRules"),
 	}
 
 	klog.Info("Setting up event handlers")
@@ -179,6 +192,17 @@ func NewController(
 		DeleteFunc: controller.enqueueSeviceEgressRule,
 	})
 
+	externalIPRuleInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: controller.enqueueExternalIPRule,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			if !controller.isUpdate(oldObj, newObj) {
+				return
+			}
+			controller.enqueueExternalIPRule(newObj)
+		},
+		DeleteFunc: controller.enqueueExternalIPRule,
+	})
+
 	return controller
 }
 
@@ -189,6 +213,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 	defer c.clusterEgressRuleWorkqueue.ShutDown()
 	defer c.namespaceEgressRuleWorkqueue.ShutDown()
 	defer c.seviceEgressRuleWorkqueue.ShutDown()
+	defer c.externalIPRuleWorkQueue.ShutDown()
 
 	klog.Info("Starting CES controller")
 
@@ -208,6 +233,9 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 	if ok := cache.WaitForCacheSync(stopCh, c.seviceEgressRuleSynced); !ok {
 		return fmt.Errorf("failed to wait for BIG-IP service egress rule caches to sync")
 	}
+	if ok := cache.WaitForCacheSync(stopCh, c.externalIPRuleSynced); !ok {
+		return fmt.Errorf("failed to wait for snat external ip rule caches to sync")
+	}
 
 	klog.Info("Starting workers")
 	go wait.Until(c.runEndpointsWorker, 5*time.Second, stopCh)
@@ -215,6 +243,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 	go wait.Until(c.runClusterEgressRuleWorker, 5*time.Second, stopCh)
 	go wait.Until(c.runNamespaceEgressRuleWorker, 5*time.Second, stopCh)
 	go wait.Until(c.runSeviceEgressRuleWorker, 5*time.Second, stopCh)
+	go wait.Until(c.runExternalIPRuleWorker, 5*time.Second, stopCh)
 
 	klog.Info("Started workers")
 	for i := 0; i < 5; i++ {
@@ -251,6 +280,11 @@ func (c *Controller) runSeviceEgressRuleWorker() {
 	}
 }
 
+func (c *Controller) runExternalIPRuleWorker() {
+	for c.processNextExternalIPRuleWorkItem() {
+	}
+}
+
 func (c *Controller) enqueueEndpoints(obj interface{}) {
 	c.endpointsWorkqueue.Add(obj)
 }
@@ -271,6 +305,10 @@ func (c *Controller) enqueueSeviceEgressRule(obj interface{}) {
 	c.seviceEgressRuleWorkqueue.Add(obj)
 }
 
+func (c *Controller) enqueueExternalIPRule(obj interface{}) {
+	c.externalIPRuleWorkQueue.Add(obj)
+}
+
 func (c *Controller) isUpdate(old, new interface{}) bool {
 	switch old.(type) {
 	case *kubeovn.ClusterEgressRule:
@@ -283,10 +321,10 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldRule.Spec.Action != newRule.Spec.Action {
 			return true
 		}
-		if oldRule.Spec.Logging !=  newRule.Spec.Logging{
+		if oldRule.Spec.Logging != newRule.Spec.Logging {
 			return true
 		}
-		if !reflect.DeepEqual(oldRule.Spec.ExternalServices, newRule.Spec.ExternalServices){
+		if !reflect.DeepEqual(oldRule.Spec.ExternalServices, newRule.Spec.ExternalServices) {
 			return true
 		}
 	case *kubeovn.NamespaceEgressRule:
@@ -304,10 +342,10 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldNsRule.Spec.Action != newNsRule.Spec.Action {
 			return true
 		}
-		if oldNsRule.Spec.Logging !=  newNsRule.Spec.Logging{
+		if oldNsRule.Spec.Logging != newNsRule.Spec.Logging {
 			return true
 		}
-		if !reflect.DeepEqual(oldNsRule.Spec.ExternalServices, newNsRule.Spec.ExternalServices){
+		if !reflect.DeepEqual(oldNsRule.Spec.ExternalServices, newNsRule.Spec.ExternalServices) {
 			return true
 		}
 	case *kubeovn.ServiceEgressRule:
@@ -324,13 +362,13 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldSvcRule.Spec.Action != newSvcRule.Spec.Action {
 			return true
 		}
-		if oldSvcRule.Spec.Logging !=  newSvcRule.Spec.Logging{
+		if oldSvcRule.Spec.Logging != newSvcRule.Spec.Logging {
 			return true
 		}
-		if oldSvcRule.Spec.Service != oldSvcRule.Spec.Service{
+		if oldSvcRule.Spec.Service != oldSvcRule.Spec.Service {
 			return true
 		}
-		if !reflect.DeepEqual(oldSvcRule.Spec.ExternalServices, newSvcRule.Spec.ExternalServices){
+		if !reflect.DeepEqual(oldSvcRule.Spec.ExternalServices, newSvcRule.Spec.ExternalServices) {
 			return true
 		}
 	case *kubeovn.ExternalService:
@@ -342,17 +380,25 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldExt.ResourceVersion == newExt.ResourceVersion {
 			return true
 		}
-		if !reflect.DeepEqual(oldExt.Spec.Addresses, newExt.Spec.Addresses){
+		if !reflect.DeepEqual(oldExt.Spec.Addresses, newExt.Spec.Addresses) {
 			return true
 		}
-
-		if !reflect.DeepEqual(oldExt.Spec.Ports, newExt.Spec.Ports){
+		if !reflect.DeepEqual(oldExt.Spec.Ports, newExt.Spec.Ports) {
+			return true
+		}
+	case *snat.ExternalIPRule:
+		oldEipRule := old.(*snat.ExternalIPRule)
+		newEipRule := new.(*snat.ExternalIPRule)
+		if oldEipRule.ResourceVersion == newEipRule.ResourceVersion {
+			return false
+		}
+		if !reflect.DeepEqual(oldEipRule.Spec, newEipRule.Spec) {
 			return true
 		}
 	case *corev1.Endpoints:
 		oldEp := old.(*corev1.Endpoints)
 		newEp := new.(*corev1.Endpoints)
-		if oldEp.Namespace == "kube-system"{
+		if oldEp.Namespace == "kube-system" {
 			return false
 		}
 		nsConfig := as3.GetTenantConfigForNamespace(oldEp.Namespace)
@@ -363,10 +409,10 @@ func (c *Controller) isUpdate(old, new interface{}) bool {
 		if oldEp.ResourceVersion == newEp.ResourceVersion {
 			return false
 		}
-		if len(newEp.Subsets) == 0{
+		if len(newEp.Subsets) == 0 {
 			return false
 		}
-		if !reflect.DeepEqual(oldEp.Subsets, newEp.Subsets){
+		if !reflect.DeepEqual(oldEp.Subsets, newEp.Subsets) {
 			return true
 		}
 	}

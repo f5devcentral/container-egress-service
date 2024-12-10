@@ -122,14 +122,19 @@ func main() {
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, time.Second*30)
 	as3InformerFactory := informers.NewSharedInformerFactory(as3Client, time.Second*30)
+
 	endpointsInformer := kubeInformerFactory.Core().V1().Endpoints()
 	externalServiceInformer := as3InformerFactory.Kubeovn().V1alpha1().ExternalServices()
 	clusterEgressRuleInformer := as3InformerFactory.Kubeovn().V1alpha1().ClusterEgressRules()
 	namespaceEgressRuleInformer := as3InformerFactory.Kubeovn().V1alpha1().NamespaceEgressRules()
 	serviceEgressRuleInformer := as3InformerFactory.Kubeovn().V1alpha1().ServiceEgressRules()
+	externalIPRuleInformer := as3InformerFactory.Bigip().V1alpha1().ExternalIPRules()
 
-	controller := controller.NewController(kubeClient, as3Client, endpointsInformer, externalServiceInformer, clusterEgressRuleInformer,
-		namespaceEgressRuleInformer, serviceEgressRuleInformer, bigIpClient)
+	controller := controller.NewController(kubeClient, as3Client,
+		endpointsInformer, externalServiceInformer, clusterEgressRuleInformer,
+		namespaceEgressRuleInformer, serviceEgressRuleInformer,
+		externalIPRuleInformer,
+		bigIpClient)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
