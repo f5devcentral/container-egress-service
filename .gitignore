@@ -3,3 +3,4 @@ dist/ces-controller
 .vscode
 .DS_Store
 cmd/ces/test_data
+cmd/ces/ces
