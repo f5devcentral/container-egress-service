@@ -46,6 +46,9 @@ var (
 	bigipPassword string
 	bigipCredsDir string
 	bigipConfDir  string
+
+	license    string
+	licenseKey string
 )
 
 func main() {
@@ -56,6 +59,8 @@ func main() {
 	if bigipCredsDir != "" {
 		usernameFile := filepath.Join(bigipCredsDir, "username")
 		passwordFile := filepath.Join(bigipCredsDir, "password")
+		licenseFIle := filepath.Join(bigipCredsDir, "license")
+		licenseKeyFile := filepath.Join(bigipCredsDir, "licensekey")
 
 		setField := func(field *string, filename, fieldType string) error {
 			fileBytes, readErr := ioutil.ReadFile(filename)
@@ -75,6 +80,12 @@ func main() {
 			panic(err)
 		}
 		if err := setField(&bigipPassword, passwordFile, "password"); err != nil {
+			panic(err)
+		}
+		if err := setField(&license, licenseFIle, "license"); err != nil {
+			panic(err)
+		}
+		if err := setField(&licenseKey, licenseKeyFile, "license key"); err != nil {
 			panic(err)
 		}
 	}
@@ -111,6 +122,11 @@ func main() {
 		klog.Fatal("env CES_NAMESPACE can't be empty ")
 	}
 	bigIpClient := as3.NewClient(bigipURL, bigipUsername, bigipPassword, bigipInsecure)
+
+	if err := bigIpClient.VerifyLicense(license, licenseKey); err != nil {
+		klog.Fatalf("failed to verify license: %v", err)
+		return
+	}
 	err = as3.InitAs3Tenant(bigIpClient, bigipConfDir, controllerNamespace)
 	if err != nil {
 		klog.Fatalf("failed to initialize AS3 declaration: %v", err)
@@ -154,6 +170,8 @@ func init() {
 	flag.BoolVar(&bigipInsecure, "bigip-insecure", false, "Optional, when set to true, enable insecure SSL communication to BigIP.")
 	flag.StringVar(&bigipUsername, "bigip-username", "", "User name for the Big-IP user account.")
 	flag.StringVar(&bigipPassword, "bigip-password", "", "Password for the Big-IP user account.")
+	flag.StringVar(&license, "license", "", "license to be used.")
+	flag.StringVar(&licenseKey, "license-key", "", "license key to be used for ces license.")
 	flag.StringVar(&bigipCredsDir, "bigip-creds-dir", "", "Directory that contains the BIG-IP username and password. To be used instead of username and password.")
 	flag.StringVar(&bigipConfDir, "bigip-conf-dir", "", "Directory that ces-conf.yaml file.")
 }

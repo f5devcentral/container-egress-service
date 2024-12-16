@@ -5,7 +5,7 @@ GITHUBACTIONTRIGGERNUMBER = 12
 
 REGISTRY = f5devcentral
 NAME = ces-controller
-RELEASE_TAG = 0.6.0
+RELEASE_TAG = 0.6.1
 COMMIT = git-$(shell git rev-parse --short HEAD)
 DATE = $(shell date +"%Y-%m-%d_%H:%M:%S")
 GOLDFLAGS = "-w -s -X github.com/kubeovn/$(NAME)/versions.COMMIT=$(COMMIT) -X github.com/kubeovn/$(NAME)/versions.VERSION=$(RELEASE_TAG) -X github.com/kubeovn/$(NAME)/versions.BUILDDATE=$(DATE)"

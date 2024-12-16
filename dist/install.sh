@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+LICENSE=${LICENSE:-}
+LICENSEKEY=${LICENSEKEY:-}
+
 BIGIP_URL=${BIGIP_URL:-}               # IP address of Big-IP server
 BIGIP_USERNAME=${BIGIP_USERNAME:-}     # BigIP username
 BIGIP_PASSWORD=${BIGIP_PASSWORD:-}     # BigIP password
@@ -10,7 +13,7 @@ CES_NAMESPACE=${CES_NAMESPACE:-kube-system} # namespace in which the controller 
 CES_DEPLOMENT_NAME=${CES_DEPLOMENT_NAME:-ces-controller}
 
 echo "[Step 1] Create Secret"
-kubectl -n $CES_NAMESPACE create secret generic --from-literal "username=$BIGIP_USERNAME" --from-literal "password=$BIGIP_PASSWORD" bigip-creds
+kubectl -n $CES_NAMESPACE create secret generic --from-literal "license=$LICENSE" --from-literal "licensekey=$LICENSEKEY" --from-literal "username=$BIGIP_USERNAME" --from-literal "password=$BIGIP_PASSWORD" bigip-creds
 echo "-------------------------------"
 echo ""
 
@@ -532,7 +535,7 @@ spec:
       serviceAccountName: ces-controller
       containers:
         - name: ces-controller
-          image: f5devcentral/ces-controller:0.6.0
+          image: f5devcentral/ces-controller:0.6.1
           env:
             - name: CES_NAMESPACE
               value: $CES_NAMESPACE

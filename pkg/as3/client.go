@@ -18,7 +18,10 @@ package as3
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -117,11 +120,11 @@ func (c *Client) Get(partition string) (string, error) {
 		return "", err
 	}
 	//Common tenant isn't exist, body is "" == (as3 do not set)
-	if err == nil && resp.StatusCode > 199 && resp.StatusCode <299 && string(respBody) == ""{
+	if err == nil && resp.StatusCode > 199 && resp.StatusCode < 299 && string(respBody) == "" {
 		return "{}", nil
 	}
 	//specified Tenant(s) not found in declaration
-	if resp.StatusCode == 404{
+	if resp.StatusCode == 404 {
 		return "{}", nil
 	}
 	var response map[string]interface{}
@@ -369,4 +372,108 @@ func (c *Client) storeDisk() error {
 		return err
 	}
 	return handleResponse(resp.StatusCode, response)
+}
+
+// get f5 license key
+func (c *Client) getF5LicenseKey() (string, error) {
+	url := c.host + "/mgmt/tm/sys/license"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		klog.Errorf("Failed to get bigdata license: %v", err)
+		return "", err
+	}
+	req.SetBasicAuth(c.username, c.password)
+
+	resp, err := c.Do(req)
+	if err != nil {
+		klog.Errorf("Failed to call bigdata API: %v", err)
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		klog.Errorf("Failed to read response body: %v", err)
+		return "", err
+	}
+
+	if resp.StatusCode != 200 && string(respBody) == "" {
+		return "", fmt.Errorf("Failed to get license key")
+	}
+
+	type RegistrationKey struct {
+		Description string `json:"description"`
+	}
+
+	type License struct {
+		RegistrationKey RegistrationKey `json:"registrationKey"`
+	}
+
+	type NestedStatsEntries struct {
+		Entries License `json:"entries"`
+	}
+
+	type LicentseNestedStats struct {
+		NestedStats NestedStatsEntries `json:"nestedStats"`
+	}
+
+	type LicentseZero struct {
+		Zero LicentseNestedStats `json:"https://localhost/mgmt/tm/sys/license/0"`
+	}
+
+	type BigDataLicense struct {
+		Entries LicentseZero `json:"entries"`
+	}
+
+	var license BigDataLicense
+	if err = json.Unmarshal(respBody, &license); err != nil {
+		klog.Errorf("Failed to unmarshal license body: %v", err)
+		return "", err
+	}
+	return license.Entries.Zero.NestedStats.Entries.RegistrationKey.Description, nil
+}
+
+// verify license, If err is nil, the verification passes.
+func (c *Client) VerifyLicense(license string, key string) error {
+	bigDataLicense, err := c.getF5LicenseKey()
+	if err != nil {
+		return err
+	}
+
+	bytesPass, err := base64.StdEncoding.DecodeString(license)
+	if err != nil {
+		return err
+	}
+
+	tpass, err := AesDecrypt(bytesPass, []byte(key))
+	if err != nil {
+		return err
+	}
+
+	if bigDataLicense != string(tpass) {
+		return fmt.Errorf("license is not ok")
+	}
+
+	return nil
+}
+
+func PKCS5UnPadding(origData []byte) []byte {
+	length := len(origData)
+	unpadding := int(origData[length-1])
+	return origData[:(length - unpadding)]
+}
+
+func AesDecrypt(crypted, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	//AES分组长度为128位，所以blockSize=16，单位字节
+	blockSize := block.BlockSize()
+	blockMode := cipher.NewCBCDecrypter(block, key[:blockSize]) //初始向量的长度必须等于块block的长度16字节
+	origData := make([]byte, len(crypted))
+	blockMode.CryptBlocks(origData, crypted)
+	origData = PKCS5UnPadding(origData)
+	return origData, nil
 }
